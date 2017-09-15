@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
-use std::ptr;
 
 extern crate libc;
 extern crate png;
@@ -13,7 +12,7 @@ mod xwrap;
 use xwrap::Display;
 
 fn main() {
-    let display = Display::open(ptr::null()).unwrap();
+    let display = Display::open(None).unwrap();
     let root = display.get_default_root();
     let attrs = display.get_window_attributes(root);
     let image = display.get_image(root, 0, 0,

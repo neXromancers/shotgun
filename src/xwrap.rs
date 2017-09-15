@@ -1,4 +1,6 @@
+use std::ffi;
 use std::mem;
+use std::ptr;
 use std::slice;
 
 use libc;
@@ -19,8 +21,12 @@ pub struct Image {
 }
 
 impl Display {
-    pub fn open(name: *const libc::c_char) -> Option<Display> {
+    pub fn open(name: Option<ffi::CString>) -> Option<Display> {
         unsafe {
+            let name = match name {
+                None => ptr::null(),
+                Some(cstr) => cstr.as_ptr(),
+            };
             let d = xlib::XOpenDisplay(name);
 
             if d.is_null() {
