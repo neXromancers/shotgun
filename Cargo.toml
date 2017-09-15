@@ -1,0 +1,12 @@
+[package]
+name = "shotgun"
+version = "0.1.0"
+authors = ["Dan Elkouby <streetwalkermc@gmail.com>"]
+
+[dependencies]
+libc = "0.2"
+png = "0.9"
+
+[dependencies.x11]
+version = "2.15"
+features = ["xlib"]
