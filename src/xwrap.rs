@@ -89,20 +89,24 @@ impl Image {
 
     pub fn into_image_buffer(&self) -> Result<RgbaImage, PixelFmtError> {
         unsafe {
+            // Extract values from the XImage into our own scope
             macro_rules! get {
                 ($($a:ident),+) => ($(let $a = (*self.handle).$a;)+);
             }
-
             get!(width, height,
                  byte_order, depth, bytes_per_line, bits_per_pixel,
                  red_mask, green_mask, blue_mask);
 
+            // Pixel size
             let stride = match (depth, bits_per_pixel) {
                 (24, 24) => 3,
                 (24, 32) | (32, 32) => 4,
                 _ => return Err(PixelFmtError::InvalidDepth),
             };
 
+            // Compute subpixel offsets into each pixel according the the bitmasks X gives us
+            // Only 8 bit, byte-aligned values are supported
+            // Truncate masks to the lower 32 bits as that is the maximum pixel size
             macro_rules! channel_offset {
                 ($mask:expr) => (match (byte_order, $mask & 0xFFFFFFFF) {
                     (0, 0xFF) | (1, 0xFF000000) => 0,
@@ -117,9 +121,11 @@ impl Image {
             let blue_offset = channel_offset!(blue_mask);
             let alpha_offset = channel_offset!(!(red_mask | green_mask | blue_mask));
 
+            // Wrap the pixel buffer into a slice
             let size = (bytes_per_line * height) as usize;
             let data = slice::from_raw_parts((*self.handle).data as *const u8, size);
 
+            // Finally, generate the image object
             Ok(RgbaImage::from_fn(width as u32, height as u32, |x, y| {
                 macro_rules! subpixel {
                     ($channel_offset:ident) => (data[(y * bytes_per_line as u32
@@ -129,6 +135,7 @@ impl Image {
                 Rgba::from_channels(subpixel!(red_offset),
                                     subpixel!(green_offset),
                                     subpixel!(blue_offset),
+                                    // Make the alpha channel fully opaque if none is provided
                                     if depth == 24 { 0xFF } else { subpixel!(alpha_offset) })
             }))
         }
