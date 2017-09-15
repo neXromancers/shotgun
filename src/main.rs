@@ -1,10 +1,7 @@
-use std::fs::File;
-use std::io::BufWriter;
 use std::path::Path;
 
+extern crate image;
 extern crate libc;
-extern crate png;
-use png::HasParameters;
 extern crate x11;
 use x11::xlib;
 
@@ -20,11 +17,8 @@ fn main() {
                                   xwrap::ALL_PLANES, xlib::ZPixmap).unwrap();
 
     let path = Path::new("shotgun.png");
-    let file = File::create(path).unwrap();
-    let ref mut w = BufWriter::new(file);
-
-    let mut encoder = png::Encoder::new(w, attrs.width as u32, attrs.height as u32);
-    encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
-    let mut writer = encoder.write_header().unwrap();
-    writer.write_image_data(image.get_data()).unwrap();
+    // FIXME handle errors
+    if let Ok(buf) = image.into_image_buffer() {
+        buf.save(path).unwrap();
+    }
 }

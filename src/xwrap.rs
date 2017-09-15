@@ -3,14 +3,11 @@ use std::mem;
 use std::ptr;
 use std::slice;
 
+use image::{RgbaImage, Pixel, Rgba};
 use libc;
 use x11::xlib;
 
 pub const ALL_PLANES: libc::c_ulong = !0;
-
-macro_rules! get {
-    ($s:ident, $a:ident) => ((*$s.handle).$a);
-}
 
 pub struct Display {
     handle: *mut xlib::Display,
@@ -18,6 +15,11 @@ pub struct Display {
 
 pub struct Image {
     handle: *mut xlib::XImage,
+}
+
+pub enum PixelFmtError {
+    InvalidDepth,
+    InvalidChannelMask,
 }
 
 impl Display {
@@ -65,9 +67,7 @@ impl Display {
                 return None;
             }
 
-            Some(Image {
-                handle: image,
-            })
+            Some(Image::from_raw_ximage(image))
         }
     }
 }
@@ -81,10 +81,56 @@ impl Drop for Display {
 }
 
 impl Image {
-    pub fn get_data(&self) -> &[u8] {
+    pub fn from_raw_ximage(ximage: *mut xlib::XImage) -> Image {
+        Image {
+            handle: ximage,
+        }
+    }
+
+    pub fn into_image_buffer(&self) -> Result<RgbaImage, PixelFmtError> {
         unsafe {
-            let length = (get!(self, width) * get!(self, height) * 4) as usize;
-            slice::from_raw_parts(get!(self, data) as *const u8, length)
+            macro_rules! get {
+                ($($a:ident),+) => ($(let $a = (*self.handle).$a;)+);
+            }
+
+            get!(width, height,
+                 byte_order, depth, bytes_per_line, bits_per_pixel,
+                 red_mask, green_mask, blue_mask);
+
+            let stride = match (depth, bits_per_pixel) {
+                (24, 24) => 3,
+                (24, 32) | (32, 32) => 4,
+                _ => return Err(PixelFmtError::InvalidDepth),
+            };
+
+            macro_rules! channel_offset {
+                ($mask:expr) => (match (byte_order, $mask & 0xFFFFFFFF) {
+                    (0, 0xFF) | (1, 0xFF000000) => 0,
+                    (0, 0xFF00) | (1, 0xFF0000) => 1,
+                    (0, 0xFF0000) | (1, 0xFF00) => 2,
+                    (0, 0xFF000000) | (1, 0xFF) => 3,
+                    _ => return Err(PixelFmtError::InvalidChannelMask),
+                })
+            }
+            let red_offset = channel_offset!(red_mask);
+            let green_offset = channel_offset!(green_mask);
+            let blue_offset = channel_offset!(blue_mask);
+            let alpha_offset = channel_offset!(!(red_mask | green_mask | blue_mask));
+
+            let size = (bytes_per_line * height) as usize;
+            let data = slice::from_raw_parts((*self.handle).data as *const u8, size);
+
+            Ok(RgbaImage::from_fn(width as u32, height as u32, |x, y| {
+                macro_rules! subpixel {
+                    ($channel_offset:ident) => (data[(y * bytes_per_line as u32
+                                                + x * stride as u32
+                                                + $channel_offset) as usize]);
+                }
+                Rgba::from_channels(subpixel!(red_offset),
+                                    subpixel!(green_offset),
+                                    subpixel!(blue_offset),
+                                    if depth == 24 { 0xFF } else { subpixel!(alpha_offset) })
+            }))
         }
     }
 }
