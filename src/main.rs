@@ -1,4 +1,5 @@
 use std::env;
+use std::ffi::CString;
 use std::fs::File;
 use std::io;
 use std::path::Path;
@@ -8,8 +9,6 @@ extern crate getopts;
 extern crate image;
 extern crate isatty;
 extern crate libc;
-extern crate regex;
-use regex::Regex;
 extern crate time;
 extern crate x11;
 use x11::xlib;
@@ -68,20 +67,7 @@ fn main() {
         (attrs.width as libc::c_uint, attrs.height as libc::c_uint, 0, 0)
     },
     |s| {
-        let re = Regex::new(r"(\d{1,4})x(\d{1,4})\+(\d{1,4})\+(\d{1,4})")
-            .expect("Failed to compile geometry regex");
-
-        let g: Vec<libc::c_int> = match re.captures(s.as_str()) {
-            Some(matches) => matches.iter().skip(1).map(|v| {
-                v.unwrap().as_str().parse::<libc::c_int>().expect("Failed to parse int")
-            }).collect(),
-            None => {
-                eprintln!("Invalid geometry format");
-                usage(&progname, opts);
-                process::exit(1);
-            },
-        };
-        (g[0] as libc::c_uint, g[1] as libc::c_uint, g[2], g[3])
+        xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
     });
 
     if w <= 0 || h <= 0 {

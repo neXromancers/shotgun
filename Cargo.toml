@@ -8,7 +8,6 @@ getopts = "0.2"
 image = "0.15"
 isatty = "0.1"
 libc = "0.2"
-regex = "0.2"
 time = "0.1"
 
 [dependencies.x11]
