@@ -85,7 +85,6 @@ fn run() -> i32 {
         return 1;
     }
 
-
     let image = match display.get_image(window, x, y, w, h, xwrap::ALL_PLANES, xlib::ZPixmap) {
         Some(i) => i,
         None => {
