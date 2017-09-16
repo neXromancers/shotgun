@@ -147,10 +147,10 @@ impl Drop for Image {
 
 pub fn parse_geometry(g: ffi::CString) -> (libc::c_uint, libc::c_uint, libc::c_int, libc::c_int) {
     unsafe {
-        let mut w = mem::uninitialized();
-        let mut h = mem::uninitialized();
-        let mut x = mem::uninitialized();
-        let mut y = mem::uninitialized();
+        let mut w = 0;
+        let mut h = 0;
+        let mut x = 0;
+        let mut y = 0;
         xlib::XParseGeometry(g.as_ptr() as *const i8, &mut x, &mut y, &mut w, &mut h);
         (w, h, x, y)
     }
