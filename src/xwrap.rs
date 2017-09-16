@@ -17,11 +17,6 @@ pub struct Image {
     handle: *mut xlib::XImage,
 }
 
-pub enum PixelFmtError {
-    InvalidDepth,
-    InvalidChannelMask,
-}
-
 impl Display {
     pub fn open(name: Option<ffi::CString>) -> Option<Display> {
         unsafe {
@@ -87,7 +82,7 @@ impl Image {
         }
     }
 
-    pub fn into_image_buffer(&self) -> Result<RgbaImage, PixelFmtError> {
+    pub fn into_image_buffer(&self) -> Option<RgbaImage> {
         unsafe {
             // Extract values from the XImage into our own scope
             macro_rules! get {
@@ -101,7 +96,7 @@ impl Image {
             let stride = match (depth, bits_per_pixel) {
                 (24, 24) => 3,
                 (24, 32) | (32, 32) => 4,
-                _ => return Err(PixelFmtError::InvalidDepth),
+                _ => return None,
             };
 
             // Compute subpixel offsets into each pixel according the the bitmasks X gives us
@@ -113,7 +108,7 @@ impl Image {
                     (0, 0xFF00) | (1, 0xFF0000) => 1,
                     (0, 0xFF0000) | (1, 0xFF00) => 2,
                     (0, 0xFF000000) | (1, 0xFF) => 3,
-                    _ => return Err(PixelFmtError::InvalidChannelMask),
+                    _ => return None,
                 })
             }
             let red_offset = channel_offset!(red_mask);
@@ -126,7 +121,7 @@ impl Image {
             let data = slice::from_raw_parts((*self.handle).data as *const u8, size);
 
             // Finally, generate the image object
-            Ok(RgbaImage::from_fn(width as u32, height as u32, |x, y| {
+            Some(RgbaImage::from_fn(width as u32, height as u32, |x, y| {
                 macro_rules! subpixel {
                     ($channel_offset:ident) => (data[(y * bytes_per_line as u32
                                                 + x * stride as u32
