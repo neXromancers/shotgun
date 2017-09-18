@@ -122,6 +122,7 @@ fn run() -> i32 {
         }
     };
 
+    // When capturing the root window, attempt to mask the off-screen areas
     if window == root {
         match display.get_screen_rects(root) {
             Some(screens) => {
