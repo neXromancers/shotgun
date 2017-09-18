@@ -12,7 +12,7 @@ to maim:
   instead of dumping raw PNG data into your terminal (unless `-` is specified as
   the output file name)
 - Most command-line flags were omitted
-- The XShape extension is not supported
+- The XShape extension and `_NET_FRAME_EXTENTS` are not supported
 - On average, shotgun is more than twice as fast as maim
 - The code base is kept as small and simple as possible (as much as Rust allows)
 
@@ -28,8 +28,8 @@ There are several reasons for omitting these features:
   for it
 - `-w` is difficult to use in scripts, rarely useful, and can be replaced by the
   calling script
-- XShape is rarely used, the proper fix for GTK3 applications is to disable CSD
-  or not use those that make use of it in the first place
+- XShape is rarely used, and the proper fix for Mutter is not to use GNOME 3 in
+  the first place
 
 Please note that I do not hold anything against maim nor its author, this is
 simply my rationale for writing my own replacement.
