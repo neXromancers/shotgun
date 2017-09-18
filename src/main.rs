@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cmp;
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -23,6 +22,7 @@ extern crate time;
 extern crate x11;
 use x11::xlib;
 
+mod util;
 mod xwrap;
 use xwrap::Display;
 
@@ -81,20 +81,31 @@ fn run() -> i32 {
         None => root,
     };
 
-    let attrs = display.get_window_attributes(window);
-    let (w, h, x, y) = match matches.opt_str("g") {
-        Some(s) => xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString")),
-        None => {
-            (attrs.width as libc::c_uint, attrs.height as libc::c_uint, 0, 0)
+    let window_rect = display.get_window_rect(window);
+    let sel = match matches.opt_str("g") {
+        Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
+                         .intersection(window_rect) {
+            Some(sel) => util::Rect {
+                // Selection is relative to the root window (whole screen)
+                x: sel.x - window_rect.x,
+                y: sel.y - window_rect.y,
+                w: sel.w,
+                h: sel.h,
+            },
+            None => {
+                eprintln!("Invalid geometry");
+                return 1;
+            },
+        },
+        None => util::Rect {
+            x: 0,
+            y: 0,
+            w: window_rect.w,
+            h: window_rect.h,
         },
     };
-    if w <= 0 || h <= 0 || x < 0 || y < 0
-        || x + w as libc::c_int > attrs.width || y + h as libc::c_int > attrs.height {
-        eprintln!("Invalid geometry");
-        return 1;
-    }
 
-    let image = match display.get_image(window, x, y, w, h, xwrap::ALL_PLANES, xlib::ZPixmap) {
+    let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {
         Some(i) => i,
         None => {
             eprintln!("Failed to get image from X");
@@ -114,23 +125,22 @@ fn run() -> i32 {
     if window == root {
         match display.get_screen_rects(root) {
             Some(screens) => {
-                let mut masked = RgbaImage::from_pixel(w, h, Rgba::from_channels(0, 0, 0, 0));
+                let mut masked = RgbaImage::from_pixel(sel.w as u32, sel.h as u32,
+                                                       Rgba::from_channels(0, 0, 0, 0));
 
-                for (sw, sh, sx, sy) in screens {
-                    // Clamp the area to copy
-                    let sub_x = cmp::max(x, sx);
-                    let sub_y = cmp::max(y, sy);
-                    let sub_w = cmp::min(x + w as i32, sx + sw) - sub_x;
-                    let sub_h = cmp::min(y + h as i32, sy + sh) - sub_y;
+                for screen in screens {
+                    if let Some(sub) = screen.intersection(sel) {
+                        // Subimage is relative to the captured area
+                        let sub = util::Rect {
+                            x: sub.x - sel.x,
+                            y: sub.y - sel.y,
+                            w: sub.w,
+                            h: sub.h,
+                        };
 
-                    // Recalculate x and y relative to the captured area
-                    let sub_x = sub_x - x;
-                    let sub_y = sub_y - y;
-
-                    if sub_w > 0 && sub_h > 0 {
-                        let mut sub_src = image.sub_image(sub_x as u32, sub_y as u32,
-                                                          sub_w as u32, sub_h as u32);
-                        masked.copy_from(&mut sub_src, sub_x as u32, sub_y as u32);
+                        let mut sub_src = image.sub_image(sub.x as u32, sub.y as u32,
+                                                          sub.w as u32, sub.h as u32);
+                        masked.copy_from(&mut sub_src, sub.x as u32, sub.y as u32);
                     }
                 }
 

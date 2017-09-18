@@ -14,6 +14,8 @@ use libc;
 use x11::xlib;
 use x11::xrandr;
 
+use util;
+
 pub const ALL_PLANES: libc::c_ulong = !0;
 
 pub struct Display {
@@ -56,21 +58,27 @@ impl Display {
         }
     }
 
-    pub fn get_window_attributes(&self, window: xlib::Window) -> xlib::XWindowAttributes {
+    pub fn get_window_rect(&self, window: xlib::Window) -> util::Rect {
         unsafe {
             let mut attrs = mem::uninitialized();
             xlib::XGetWindowAttributes(self.handle, window, &mut attrs);
-            attrs
+            
+            util::Rect {
+                x: attrs.x,
+                y: attrs.y,
+                w: attrs.width,
+                h: attrs.height,
+            }
         }
     }
 
-    pub fn get_image(&self, window: xlib::Window,
-                     x: libc::c_int, y: libc::c_int,
-                     w: libc::c_uint, h: libc::c_uint,
-                     plane_mask: libc::c_ulong,
+    pub fn get_image(&self, window: xlib::Window, rect: util::Rect, plane_mask: libc::c_ulong,
                      format: libc::c_int) -> Option<Image> {
         unsafe {
-            let image = xlib::XGetImage(self.handle, window, x, y, w, h, plane_mask, format);
+            let image = xlib::XGetImage(self.handle, window,
+                                        rect.x, rect.y,
+                                        rect.w as libc::c_uint, rect.h as libc::c_uint,
+                                        plane_mask, format);
 
             if image.is_null() {
                 return None;
@@ -177,7 +185,7 @@ impl Drop for Image {
 }
 
 impl<'a> Iterator for ScreenRectIter<'a> {
-    type Item = (i32, i32, i32, i32);
+    type Item = util::Rect;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.i >= self.crtcs.len() {
@@ -187,15 +195,21 @@ impl<'a> Iterator for ScreenRectIter<'a> {
         unsafe {
             // TODO Handle failure here?
             let crtc = xrandr::XRRGetCrtcInfo((*self.dpy).handle, self.res, self.crtcs[self.i]);
-            let w = (*crtc).width;
-            let h = (*crtc).height;
             let x = (*crtc).x;
             let y = (*crtc).y;
+            let w = (*crtc).width;
+            let h = (*crtc).height;
             xrandr::XRRFreeCrtcInfo(crtc);
 
             self.i += 1;
 
-            Some((w as i32, h as i32, x as i32, y as i32))
+            //Some((w as i32, h as i32, x as i32, y as i32))
+            Some(util::Rect {
+                x: x,
+                y: y,
+                w: w as i32,
+                h: h as i32,
+            })
         }
     }
 }
@@ -208,13 +222,19 @@ impl<'a> Drop for ScreenRectIter<'a> {
     }
 }
 
-pub fn parse_geometry(g: ffi::CString) -> (libc::c_uint, libc::c_uint, libc::c_int, libc::c_int) {
+pub fn parse_geometry(g: ffi::CString) -> util::Rect {
     unsafe {
-        let mut w = 0;
-        let mut h = 0;
         let mut x = 0;
         let mut y = 0;
+        let mut w = 0;
+        let mut h = 0;
         xlib::XParseGeometry(g.as_ptr() as *const i8, &mut x, &mut y, &mut w, &mut h);
-        (w, h, x, y)
+
+        util::Rect {
+            x: x,
+            y: y,
+            w: w as i32,
+            h: h as i32,
+        }
     }
 }
