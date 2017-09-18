@@ -1,3 +1,4 @@
+use std::cmp;
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -8,6 +9,10 @@ use std::process;
 extern crate getopts;
 use getopts::Options;
 extern crate image;
+use image::GenericImage;
+use image::Pixel;
+use image::RgbaImage;
+use image::Rgba;
 extern crate isatty;
 extern crate libc;
 extern crate time;
@@ -93,7 +98,7 @@ fn run() -> i32 {
         },
     };
 
-    let image = match image.into_image_buffer() {
+    let mut image = match image.into_image_buffer() {
         Some(i) => image::ImageRgba8(i),
         None => {
             eprintln!("Failed to convert captured framebuffer, only 24/32 \
@@ -101,6 +106,37 @@ fn run() -> i32 {
             return 1;
         }
     };
+
+    if window == root {
+        match display.get_screen_rects(root) {
+            Some(screens) => {
+                let mut masked = RgbaImage::from_pixel(w, h, Rgba::from_channels(0, 0, 0, 0));
+
+                for (sw, sh, sx, sy) in screens {
+                    // Clamp the area to copy
+                    let sub_x = cmp::max(x, sx);
+                    let sub_y = cmp::max(y, sy);
+                    let sub_w = cmp::min(x + w as i32, sx + sw) - sub_x;
+                    let sub_h = cmp::min(y + h as i32, sy + sh) - sub_y;
+
+                    // Recalculate x and y relative to the captured area
+                    let sub_x = sub_x - x;
+                    let sub_y = sub_y - y;
+
+                    if sub_w > 0 && sub_h > 0 {
+                        let mut sub_src = image.sub_image(sub_x as u32, sub_y as u32,
+                                                          sub_w as u32, sub_h as u32);
+                        masked.copy_from(&mut sub_src, sub_x as u32, sub_y as u32);
+                    }
+                }
+
+                image = image::ImageRgba8(masked);
+            },
+            None => {
+                eprintln!("Failed to enumerate screens, not masking");
+            },
+        }
+    }
 
     let ts_path = format!("{}.png", time::get_time().sec);
     let path = match matches.free.get(0) {

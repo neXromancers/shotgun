@@ -12,4 +12,4 @@ time = "0.1"
 
 [dependencies.x11]
 version = "2.15"
-features = ["xlib"]
+features = ["xlib", "xrandr"]

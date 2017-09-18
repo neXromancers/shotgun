@@ -3,9 +3,12 @@ use std::mem;
 use std::ptr;
 use std::slice;
 
-use image::{RgbaImage, Pixel, Rgba};
+use image::Pixel;
+use image::RgbaImage;
+use image::Rgba;
 use libc;
 use x11::xlib;
+use x11::xrandr;
 
 pub const ALL_PLANES: libc::c_ulong = !0;
 
@@ -15,6 +18,13 @@ pub struct Display {
 
 pub struct Image {
     handle: *mut xlib::XImage,
+}
+
+pub struct ScreenRectIter<'a> {
+    dpy: &'a Display,
+    res: *mut xrandr::XRRScreenResources,
+    crtcs: &'a [xrandr::RRCrtc],
+    i: usize,
 }
 
 impl Display {
@@ -63,6 +73,23 @@ impl Display {
             }
 
             Some(Image::from_raw_ximage(image))
+        }
+    }
+
+    pub fn get_screen_rects(&self, root: xlib::Window) -> Option<ScreenRectIter> {
+        unsafe {
+            let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, root);
+
+            if xrr_res.is_null() {
+                return None
+            }
+
+            Some(ScreenRectIter {
+                dpy: &self,
+                res: xrr_res,
+                crtcs: slice::from_raw_parts((*xrr_res).crtcs, (*xrr_res).ncrtc as usize),
+                i: 0,
+            })
         }
     }
 }
@@ -141,6 +168,38 @@ impl Drop for Image {
     fn drop(&mut self) {
         unsafe {
             xlib::XDestroyImage(self.handle);
+        }
+    }
+}
+
+impl<'a> Iterator for ScreenRectIter<'a> {
+    type Item = (i32, i32, i32, i32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.i >= self.crtcs.len() {
+            return None
+        }
+
+        unsafe {
+            // TODO Handle failure here?
+            let crtc = xrandr::XRRGetCrtcInfo((*self.dpy).handle, self.res, self.crtcs[self.i]);
+            let w = (*crtc).width;
+            let h = (*crtc).height;
+            let x = (*crtc).x;
+            let y = (*crtc).y;
+            xrandr::XRRFreeCrtcInfo(crtc);
+
+            self.i += 1;
+
+            Some((w as i32, h as i32, x as i32, y as i32))
+        }
+    }
+}
+
+impl<'a> Drop for ScreenRectIter<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            xrandr::XRRFreeScreenResources(self.res);
         }
     }
 }
