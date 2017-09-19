@@ -1,20 +1,38 @@
 # shotgun
 
 A minimal screenshot utility for X11. Shotgun was written to replace
-[maim](https://github.com/naelstrof/maim) in my workflow. Here's how it compares
-to maim:
+[maim](https://github.com/naelstrof/maim) in my workflow.
+
+Features:
+- Exports PNG screenshots to file or stdout
+- Masks off-screen areas on multi-head setups
+- Supports selections by window ID and geometry
+- *On average, shotgun is more than twice as fast as maim*
+
+## Usage
+
+```
+Usage: shotgun [options] [file]
+
+Options:
+    -i, --id ID         Window to capture
+    -g, --geometry WxH+X+Y
+                        Area to capture
+    -h, --help          Print help and exit
+```
+## shotgun vs maim
 
 - Only PNG is supported
 - Does not attempt to wrap slop
 - No cursor blending
-- Masking of off-screen areas is implemented
 - Properly detects that stdout is a TTY, and defaults to a time-stamped file
   instead of dumping raw PNG data into your terminal (unless `-` is specified as
   the output file name)
 - Most command-line flags were omitted
 - The XShape extension and `_NET_FRAME_EXTENTS` are not supported
-- On average, shotgun is more than twice as fast as maim
-- The code base is kept as small and simple as possible (as much as Rust allows)
+- shotgun is written in Rust, maim in C++
+- The code base is kept as small and simple as possible (as much as Rust
+  permits)
 
 There are several reasons for omitting these features:
 - Features that can be replaced trivially by external programs and wrapper
@@ -33,18 +51,6 @@ There are several reasons for omitting these features:
 
 Please note that I do not hold anything against maim nor its author, this is
 simply my rationale for writing my own replacement.
-
-## Usage
-
-```
-Usage: shotgun [options] [file]
-
-Options:
-    -i, --id ID         Window to capture
-    -g, --geometry WxH+X+Y
-                        Area to capture
-    -h, --help          Print help and exit
-```
 
 ## Performance
 
@@ -88,3 +94,4 @@ PNG encoder.
 - Manual: Make sure you have a recent Rust toolchain. Clone this repo, then run
   `cargo install`.
 - Arch Linux: [AUR package](https://aur.archlinux.org/packages/shotgun/)
+- Other distros: make a pull request to add your package or build script!
