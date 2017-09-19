@@ -20,6 +20,17 @@ Options:
                         Area to capture
     -h, --help          Print help and exit
 ```
+
+To use with slop (as a replacement for `maim -s`):
+```bash
+#!/bin/bash
+
+set -e
+
+$sel=$(slop -f "-i %i -g %g")
+shotgun $sel $1
+```
+
 ## shotgun vs maim
 
 - Only PNG is supported
