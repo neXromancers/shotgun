@@ -28,7 +28,7 @@ To use with slop (as a replacement for `maim -s`):
 set -e
 
 $sel=$(slop -f "-i %i -g %g")
-shotgun $sel $1
+shotgun $sel $*
 ```
 
 ## shotgun vs maim
