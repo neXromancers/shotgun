@@ -40,7 +40,7 @@ shotgun $sel $1
   instead of dumping raw PNG data into your terminal (unless `-` is specified as
   the output file name)
 - Most command-line flags were omitted
-- The XShape extension and `_NET_FRAME_EXTENTS` are not supported
+- The XShape extension is not supported
 - shotgun is written in Rust, maim in C++
 - The code base is kept as small and simple as possible (as much as Rust
   permits)
@@ -55,13 +55,13 @@ There are several reasons for omitting these features:
   - `-x` shouldn't even exist in the first place, set `$DISPLAY` instead
 - I never use cursor blending, and I know that most users do not actually care
   for it
-- `-w` is difficult to use in scripts, rarely useful, and can be replaced by the
-  calling script
-- XShape is rarely used, and the proper fix for Mutter is not to use GNOME 3 in
-  the first place
-
-Please note that I do not hold anything against maim nor its author, this is
-simply my rationale for writing my own replacement.
+- `-w` (geometry relative to another window) is difficult to use and hardly
+  useful, instead, shotgun always interprets the input geometry relative to the
+  root window (maim's default is the captured window itself)
+- There is rarely a reason to take a screenshot of an XShape window, most of
+  them are special like slop's selection window or keynav's crosshair.
+  Supporting XShape properly could add a significant amount of overhead, both in
+  code length and performance, which are not desirable.
 
 ## Performance
 
