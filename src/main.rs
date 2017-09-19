@@ -81,7 +81,7 @@ fn run() -> i32 {
         None => root,
     };
 
-    let window_rect = display.get_window_rect(window);
+    let window_rect = display.get_window_rect(root, window);
     let sel = match matches.opt_str("g") {
         Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
                          .intersection(window_rect) {

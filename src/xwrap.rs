@@ -58,14 +58,20 @@ impl Display {
         }
     }
 
-    pub fn get_window_rect(&self, window: xlib::Window) -> util::Rect {
+    pub fn get_window_rect(&self, root: xlib::Window, window: xlib::Window) -> util::Rect {
         unsafe {
             let mut attrs = mem::uninitialized();
             xlib::XGetWindowAttributes(self.handle, window, &mut attrs);
-            
+
+            let mut x = 0;
+            let mut y = 0;
+            let mut child = 0;
+            xlib::XTranslateCoordinates(self.handle, window, root, attrs.x, attrs.y,
+                                        &mut x, &mut y, &mut child);
+
             util::Rect {
-                x: attrs.x,
-                y: attrs.y,
+                x: x,
+                y: y,
                 w: attrs.width,
                 h: attrs.height,
             }
