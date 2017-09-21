@@ -4,6 +4,7 @@
 
 use std::ffi;
 use std::mem;
+use std::os::raw;
 use std::ptr;
 use std::slice;
 
@@ -58,16 +59,29 @@ impl Display {
         }
     }
 
-    pub fn get_window_rect(&self, root: xlib::Window, window: xlib::Window) -> util::Rect {
+    pub fn get_window_rect(&self, window: xlib::Window) -> util::Rect {
         unsafe {
             let mut attrs = mem::uninitialized();
             xlib::XGetWindowAttributes(self.handle, window, &mut attrs);
 
-            let mut x = 0;
-            let mut y = 0;
-            let mut child = 0;
-            xlib::XTranslateCoordinates(self.handle, window, root, attrs.x, attrs.y,
-                                        &mut x, &mut y, &mut child);
+            let mut root = 0;
+            let mut parent = 0;
+            let mut children: *mut xlib::Window = ptr::null_mut();
+            let mut nchildren = 0;
+            xlib::XQueryTree(self.handle, window, &mut root, &mut parent,
+                             &mut children, &mut nchildren);
+            if !children.is_null() {
+                xlib::XFree(children as *mut raw::c_void);
+            }
+
+            let mut x = attrs.x;
+            let mut y = attrs.y;
+
+            if parent != root {
+                let mut child = 0;
+                xlib::XTranslateCoordinates(self.handle, window, root, attrs.x, attrs.y,
+                                            &mut x, &mut y, &mut child);
+            }
 
             util::Rect {
                 x: x,
