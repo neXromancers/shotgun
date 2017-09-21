@@ -77,11 +77,9 @@ impl Display {
             let mut x = attrs.x;
             let mut y = attrs.y;
 
-            if parent != root {
-                let mut child = 0;
-                xlib::XTranslateCoordinates(self.handle, window, root, attrs.x, attrs.y,
-                                            &mut x, &mut y, &mut child);
-            }
+            let mut child = 0;
+            xlib::XTranslateCoordinates(self.handle, parent, root, attrs.x, attrs.y,
+                                        &mut x, &mut y, &mut child);
 
             util::Rect {
                 x: x,
