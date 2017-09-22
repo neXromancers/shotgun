@@ -63,7 +63,7 @@ fn run() -> i32 {
     }
 
     if matches.opt_present("v") {
-        eprintln!("shotgun {}", env!("GIT_VERSION"));
+        eprintln!("shotgun {}", option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")));
         return 0;
     }
 
