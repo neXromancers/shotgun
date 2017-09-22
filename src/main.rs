@@ -39,6 +39,7 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optflag("h", "help", "Print help and exit");
+    opts.optflag("v", "version", "Print version and exit");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -59,6 +60,11 @@ fn run() -> i32 {
         eprintln!("Too many arguments");
         usage(&progname, opts);
         return 1;
+    }
+
+    if matches.opt_present("v") {
+        eprintln!("shotgun {}", env!("GIT_VERSION"));
+        return 0;
     }
 
     let display = match Display::open(None) {
