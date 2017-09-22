@@ -5,10 +5,14 @@ authors = ["Dan Elkouby <streetwalkermc@gmail.com>"]
 
 [dependencies]
 getopts = "0.2"
-image = "0.15"
 isatty = "0.1"
 libc = "0.2"
 time = "0.1"
+
+[dependencies.image]
+default-features = false
+version = "0.15"
+features = ["png_codec"]
 
 [dependencies.x11]
 version = "2.15"
