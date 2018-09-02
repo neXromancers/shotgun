@@ -174,10 +174,10 @@ fn run() -> i32 {
     };
 
     if path == "-" {
-        image.save(&mut io::stdout(), image::PNG).expect("Writing to stdout failed");
+        image.write_to(&mut io::stdout(), image::PNG).expect("Writing to stdout failed");
     } else {
         match File::create(&Path::new(&path)) {
-            Ok(mut f) => image.save(&mut f, image::PNG).expect("Writing to file failed"),
+            Ok(mut f) => image.write_to(&mut f, image::PNG).expect("Writing to file failed"),
             Err(e) => {
                 eprintln!("Failed to create {}: {}", path, e);
                 return 1

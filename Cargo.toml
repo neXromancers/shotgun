@@ -15,9 +15,9 @@ time = "0.1"
 
 [dependencies.image]
 default-features = false
-version = "0.15"
+version = "0.19"
 features = ["png_codec"]
 
 [dependencies.x11]
-version = "2.15"
+version = "2.18"
 features = ["xlib", "xrandr"]
