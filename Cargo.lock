@@ -153,7 +153,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "shotgun"
-version = "1.1.6"
+version = "1.2.0"
 dependencies = [
  "getopts 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
