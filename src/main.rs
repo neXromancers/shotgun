@@ -132,26 +132,30 @@ fn run() -> i32 {
     if window == root {
         match display.get_screen_rects(root) {
             Some(screens) => {
-                let mut masked = RgbaImage::from_pixel(sel.w as u32, sel.h as u32,
-                                                       Rgba::from_channels(0, 0, 0, 0));
+                let screens: Vec<util::Rect> =
+                    screens.filter_map(|s| s.intersection(sel)).collect();
 
-                for screen in screens {
-                    if let Some(sub) = screen.intersection(sel) {
+                // No point in masking if we're only capturing one screen
+                if screens.len() > 1 {
+                    let mut masked = RgbaImage::from_pixel(sel.w as u32, sel.h as u32,
+                                                           Rgba::from_channels(0, 0, 0, 0));
+
+                    for screen in screens {
                         // Subimage is relative to the captured area
                         let sub = util::Rect {
-                            x: sub.x - sel.x,
-                            y: sub.y - sel.y,
-                            w: sub.w,
-                            h: sub.h,
+                            x: screen.x - sel.x,
+                            y: screen.y - sel.y,
+                            w: screen.w,
+                            h: screen.h,
                         };
 
                         let mut sub_src = image.sub_image(sub.x as u32, sub.y as u32,
                                                           sub.w as u32, sub.h as u32);
                         masked.copy_from(&mut sub_src, sub.x as u32, sub.y as u32);
                     }
-                }
 
-                image = image::ImageRgba8(masked);
+                    image = image::ImageRgba8(masked);
+                }
             },
             None => {
                 eprintln!("Failed to enumerate screens, not masking");
