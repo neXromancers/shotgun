@@ -165,7 +165,10 @@ fn run() -> i32 {
     let ts_path = format!("{}.png", time::get_time().sec);
     let path = match matches.free.get(0) {
         Some(p) => p,
-        None => ts_path.as_str(),
+        None => {
+            eprintln!("No output specified, defaulting to {}", ts_path);
+            ts_path.as_str()
+        },
     };
 
     if path == "-" {
