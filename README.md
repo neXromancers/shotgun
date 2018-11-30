@@ -36,9 +36,9 @@ shotgun $sel $*
 - Only PNG is supported
 - Does not attempt to wrap slop
 - No cursor blending
-- Properly detects that stdout is a TTY, and defaults to a time-stamped file
-  instead of dumping raw PNG data into your terminal (unless `-` is specified as
-  the output file name)
+- Defaults to a time-stamped file instead of dumping raw PNG data into your
+  terminal (use `-` as the file name if you want to pipe output to something
+  else)
 - Most command-line flags were omitted
 - The XShape extension is not supported
 - shotgun is written in Rust, maim in C++
