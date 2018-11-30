@@ -16,7 +16,6 @@ use image::GenericImage;
 use image::Pixel;
 use image::RgbaImage;
 use image::Rgba;
-extern crate isatty;
 extern crate libc;
 extern crate time;
 extern crate x11;
@@ -166,11 +165,7 @@ fn run() -> i32 {
     let ts_path = format!("{}.png", time::get_time().sec);
     let path = match matches.free.get(0) {
         Some(p) => p,
-        None => if !isatty::stdout_isatty() {
-            "-"
-        } else {
-            ts_path.as_str()
-        },
+        None => ts_path.as_str(),
     };
 
     if path == "-" {
