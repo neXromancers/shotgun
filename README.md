@@ -105,5 +105,5 @@ PNG encoder.
 - Manual: Make sure you have a recent Rust toolchain. Clone this repo, then run
   `cargo install`.
 - [crates.io](https://crates.io/crates/shotgun): `cargo install shotgun`
-- Arch Linux: [AUR package](https://aur.archlinux.org/packages/shotgun/)
+- [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
 - Other distros: make a pull request to add your package or build script!
