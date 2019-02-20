@@ -87,23 +87,14 @@ fn run() -> i32 {
         None => root,
     };
 
-    let output_ext = match matches.opt_str("f") {
-        Some(s) => match s.to_lowercase().as_ref() {
-            "png" => "png",
-            "pam" => "pam",
-            _ => {
-                eprintln!("Invalid output format specified");
-                usage(&progname, opts);
-                return 1;
-            }
-        },
-        None => "png",
-    };
-
-    let output_format = match output_ext {
+    let output_ext = matches.opt_str("f").unwrap_or("png".to_string()).to_lowercase();
+    let output_format = match output_ext.as_ref() {
         "png" => image::ImageOutputFormat::PNG,
         "pam" => image::ImageOutputFormat::PNM(image::pnm::PNMSubtype::ArbitraryMap),
-        _ => image::ImageOutputFormat::PNG,
+        _ => {
+            eprintln!("Invalid image format specified");
+            return 1;
+        }
     };
 
     let window_rect = display.get_window_rect(window);
