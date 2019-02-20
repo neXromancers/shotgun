@@ -37,6 +37,7 @@ fn run() -> i32 {
     let mut opts = Options::new();
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
+    opts.optopt("f", "format", "Output format", "png/pam");
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
@@ -84,6 +85,16 @@ fn run() -> i32 {
             },
         },
         None => root,
+    };
+
+    let output_ext = matches.opt_str("f").unwrap_or("png".to_string()).to_lowercase();
+    let output_format = match output_ext.as_ref() {
+        "png" => image::ImageOutputFormat::PNG,
+        "pam" => image::ImageOutputFormat::PNM(image::pnm::PNMSubtype::ArbitraryMap),
+        _ => {
+            eprintln!("Invalid image format specified");
+            return 1;
+        }
     };
 
     let window_rect = display.get_window_rect(window);
@@ -162,7 +173,7 @@ fn run() -> i32 {
         }
     }
 
-    let ts_path = format!("{}.png", time::get_time().sec);
+    let ts_path = format!("{}.{}", time::get_time().sec, output_ext);
     let path = match matches.free.get(0) {
         Some(p) => p,
         None => {
@@ -172,10 +183,10 @@ fn run() -> i32 {
     };
 
     if path == "-" {
-        image.write_to(&mut io::stdout(), image::PNG).expect("Writing to stdout failed");
+        image.write_to(&mut io::stdout(), output_format).expect("Writing to stdout failed");
     } else {
         match File::create(&Path::new(&path)) {
-            Ok(mut f) => image.write_to(&mut f, image::PNG).expect("Writing to file failed"),
+            Ok(mut f) => image.write_to(&mut f, output_format).expect("Writing to file failed"),
             Err(e) => {
                 eprintln!("Failed to create {}: {}", path, e);
                 return 1
