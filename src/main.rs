@@ -93,9 +93,10 @@ fn run() -> i32 {
             "png" => "png",
             "pam" => "pam",
             _ => {
-                eprintln!("Invalid image format specified, defaulting to png");
-                "png"
-            },
+                eprintln!("Invalid output format specified");
+                usage(&progname, opts);
+                return 1;
+            }
         },
         None => "png",
     };
