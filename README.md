@@ -101,12 +101,14 @@ Further profiling has shown that the bottleneck in shotgun lies fully within the
 PNG encoder.
 
 ### Going faster
+
 The PNG encoder bottleneck can be avoided by using `-f pam`. This sets the output format to
 [Netpbm PAM](https://en.wikipedia.org/wiki/Netpbm#PAM_graphics_format) - an uncompressed binary image format.
 
 By using an uncompressed format both encoding and decoding performance is improved:
 
 #### Encoding
+
 ```
 >>> for i in {1..5}; do time ./target/release/shotgun -f png - > /dev/null; done
 ./target/release/shotgun -f png - > /dev/null  0.32s user 0.11s system 99% cpu 0.434 total
@@ -124,6 +126,7 @@ By using an uncompressed format both encoding and decoding performance is improv
 ```
 
 #### Decoding (using ImageMagick to convert to jpg)
+
 ```
 >>> for i in {1..5}; do time ./target/release/shotgun -f png - | convert - jpg:- > /dev/null; done
 convert - jpg:- > /dev/null  0.59s user 0.16s system 89% cpu 0.842 total
