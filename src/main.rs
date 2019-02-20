@@ -16,7 +16,6 @@ use image::GenericImage;
 use image::Pixel;
 use image::RgbaImage;
 use image::Rgba;
-use image::pnm::*;
 extern crate libc;
 extern crate time;
 extern crate x11;
@@ -103,7 +102,7 @@ fn run() -> i32 {
 
     let output_format = match output_ext {
         "png" => image::ImageOutputFormat::PNG,
-        "pam" => image::ImageOutputFormat::PNM(PNMSubtype::ArbitraryMap),
+        "pam" => image::ImageOutputFormat::PNM(image::pnm::PNMSubtype::ArbitraryMap),
         _ => image::ImageOutputFormat::PNG,
     };
 
