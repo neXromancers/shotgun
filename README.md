@@ -33,7 +33,7 @@ shotgun $sel $*
 
 ## shotgun vs maim
 
-- Only PNG is supported
+- Only PNG and PAM are supported
 - Does not attempt to wrap slop
 - No cursor blending
 - Defaults to a time-stamped file instead of dumping raw PNG data into your
@@ -48,7 +48,7 @@ shotgun $sel $*
 There are several reasons for omitting these features:
 - Features that can be replaced trivially by external programs and wrapper
   scripts:
-  - Use ImageMagick's `convert` for JPEG output
+  - Use ImageMagick's `convert` and shotgun's `-f pam` arg for JPEG output
   - slop output is easy to process in a shell script
   - Use `sleep` instead of `-d`, since slop has to be called separately, this
     flag is not necessary

@@ -15,7 +15,7 @@ time = "0.1"
 [dependencies.image]
 default-features = false
 version = "0.19"
-features = ["png_codec"]
+features = ["png_codec", "pnm"]
 
 [dependencies.x11]
 version = "2.18"
