@@ -33,7 +33,7 @@ shotgun $sel $*
 
 ## shotgun vs maim
 
-- Only PNG and PAM are supported
+- Only PNG and [PAM](#going-faster) are supported
 - Does not attempt to wrap slop
 - No cursor blending
 - Defaults to a time-stamped file instead of dumping raw PNG data into your
@@ -48,7 +48,7 @@ shotgun $sel $*
 There are several reasons for omitting these features:
 - Features that can be replaced trivially by external programs and wrapper
   scripts:
-  - Use ImageMagick's `convert` and shotgun's `-f pam` for JPEG output
+  - Use ImageMagick's `convert` and [shotgun's `-f pam`](#going-faster) for JPEG output
   - slop output is easy to process in a shell script
   - Use `sleep` instead of `-d`, since slop has to be called separately, this
     flag is not necessary
@@ -102,19 +102,19 @@ PNG encoder.
 
 ### Going faster
 The PNG encoder bottleneck can be avoided by using `-f pam`, this sets the output format to
-[Netpbm PAM](https://en.wikipedia.org/wiki/Netpbm#PAM_graphics_format), an uncompressed binary image format.
+[Netpbm PAM](https://en.wikipedia.org/wiki/Netpbm#PAM_graphics_format) - an uncompressed binary image format.
 
 By using an uncompressed format both encoding and decoding performance is improved:
+#### Encoding
 ```
->>># Encoding
->>>for i in {1..5}; do time ./target/release/shotgun -f png - > /dev/null; done
+>>> for i in {1..5}; do time ./target/release/shotgun -f png - > /dev/null; done
 ./target/release/shotgun -f png - > /dev/null  0.32s user 0.11s system 99% cpu 0.434 total
 ./target/release/shotgun -f png - > /dev/null  0.31s user 0.05s system 99% cpu 0.369 total
 ./target/release/shotgun -f png - > /dev/null  0.32s user 0.06s system 99% cpu 0.382 total
 ./target/release/shotgun -f png - > /dev/null  0.31s user 0.06s system 99% cpu 0.369 total
 ./target/release/shotgun -f png - > /dev/null  0.26s user 0.08s system 99% cpu 0.343 total
 
->>>for i in {1..5}; do time ./target/release/shotgun -f pam - > /dev/null; done
+>>> for i in {1..5}; do time ./target/release/shotgun -f pam - > /dev/null; done
 ./target/release/shotgun -f pam - > /dev/null  0.09s user 0.12s system 98% cpu 0.210 total
 ./target/release/shotgun -f pam - > /dev/null  0.07s user 0.07s system 99% cpu 0.141 total
 ./target/release/shotgun -f pam - > /dev/null  0.10s user 0.05s system 99% cpu 0.148 total
@@ -122,16 +122,16 @@ By using an uncompressed format both encoding and decoding performance is improv
 ./target/release/shotgun -f pam - > /dev/null  0.08s user 0.07s system 99% cpu 0.148 total
 ```
 
+#### Decoding (using ImageMagick to convert to jpg)
 ```
->>># Decoding (using ImageMagick to convert to jpg)
->>>for i in {1..5}; do time ./target/release/shotgun -f png - | convert - jpg:- > /dev/null; done
+>>> for i in {1..5}; do time ./target/release/shotgun -f png - | convert - jpg:- > /dev/null; done
 convert - jpg:- > /dev/null  0.59s user 0.16s system 89% cpu 0.842 total
 convert - jpg:- > /dev/null  0.58s user 0.16s system 95% cpu 0.763 total
 convert - jpg:- > /dev/null  0.55s user 0.20s system 97% cpu 0.764 total
 convert - jpg:- > /dev/null  0.53s user 0.15s system 89% cpu 0.758 total
 convert - jpg:- > /dev/null  0.61s user 0.16s system 100% cpu 0.762 total
 
->>>for i in {1..5}; do time ./target/release/shotgun -f pam - | convert - jpg:- > /dev/null; done
+>>> for i in {1..5}; do time ./target/release/shotgun -f pam - | convert - jpg:- > /dev/null; done
 convert - jpg:- > /dev/null  0.24s user 0.11s system 63% cpu 0.557 total
 convert - jpg:- > /dev/null  0.23s user 0.09s system 70% cpu 0.449 total
 convert - jpg:- > /dev/null  0.22s user 0.10s system 66% cpu 0.490 total
