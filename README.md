@@ -18,7 +18,10 @@ Options:
     -i, --id ID         Window to capture
     -g, --geometry WxH+X+Y
                         Area to capture
+    -f, --format png/pam
+                        Output format
     -h, --help          Print help and exit
+    -v, --version       Print version and exit
 ```
 
 To use with slop (as a replacement for `maim -s`):

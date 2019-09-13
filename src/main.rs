@@ -81,6 +81,7 @@ fn run() -> i32 {
             Ok(r) => r,
             Err(_) => {
                 eprintln!("Window ID is not a valid integer");
+                eprintln!("Accepted values are decimal, hex (0x*), octal (0o*) and binary (0b*)");
                 return 1;
             },
         },

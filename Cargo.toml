@@ -1,7 +1,7 @@
 [package]
 name = "shotgun"
 description = "Minimal X screenshot utility"
-version = "2.1.0"
+version = "2.2.0"
 authors = ["Dan Elkouby <streetwalkermc@gmail.com>"]
 license = "MPL-2.0"
 repository = "https://github.com/neXromancers/shotgun"
@@ -15,7 +15,7 @@ time = "0.1"
 
 [dependencies.image]
 default-features = false
-version = "0.21"
+version = "0.22"
 features = ["png_codec", "pnm"]
 
 [dependencies.x11]
