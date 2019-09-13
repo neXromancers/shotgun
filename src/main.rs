@@ -77,7 +77,7 @@ fn run() -> i32 {
     let root = display.get_default_root();
 
     let window = match matches.opt_str("i") {
-        Some(s) => match s.parse::<xlib::Window>() {
+        Some(s) => match util::parse_int::<xlib::Window>(&s) {
             Ok(r) => r,
             Err(_) => {
                 eprintln!("Window ID is not a valid integer");
