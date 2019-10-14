@@ -69,35 +69,24 @@ There are several reasons for omitting these features:
 ## Performance
 
 I've claimed that shotgun is twice as fast as maim, here's some supporting
-evidence:
+evidence (using [`hyperfine`](https://github.com/sharkdp/hyperfine)):
 
 ```
-streetwalrus@Akatsuki:~/source/shotgun(master)
->>> xrandr --fb 3840x2160
-streetwalrus@Akatsuki:~/source/shotgun(master)
->>> for i in {1..10}; do time maim > /dev/null; done
-maim > /dev/null  0.78s user 0.00s system 107% cpu 0.731 total
-maim > /dev/null  0.79s user 0.01s system 104% cpu 0.764 total
-maim > /dev/null  0.75s user 0.02s system 104% cpu 0.727 total
-maim > /dev/null  0.74s user 0.01s system 110% cpu 0.678 total
-maim > /dev/null  0.76s user 0.01s system 108% cpu 0.717 total
-maim > /dev/null  0.73s user 0.02s system 104% cpu 0.711 total
-maim > /dev/null  0.74s user 0.01s system 106% cpu 0.703 total
-maim > /dev/null  0.74s user 0.01s system 109% cpu 0.682 total
-maim > /dev/null  0.82s user 0.02s system 104% cpu 0.799 total
-maim > /dev/null  0.75s user 0.01s system 105% cpu 0.719 total
-streetwalrus@Akatsuki:~/source/shotgun(master)
->>> for i in {1..10}; do time ./target/release/shotgun > /dev/null; done
-./target/release/shotgun > /dev/null  0.31s user 0.01s system 99% cpu 0.320 total
-./target/release/shotgun > /dev/null  0.33s user 0.01s system 108% cpu 0.311 total
-./target/release/shotgun > /dev/null  0.35s user 0.01s system 109% cpu 0.322 total
-./target/release/shotgun > /dev/null  0.35s user 0.01s system 111% cpu 0.327 total
-./target/release/shotgun > /dev/null  0.31s user 0.01s system 107% cpu 0.296 total
-./target/release/shotgun > /dev/null  0.32s user 0.01s system 109% cpu 0.302 total
-./target/release/shotgun > /dev/null  0.36s user 0.00s system 105% cpu 0.338 total
-./target/release/shotgun > /dev/null  0.32s user 0.01s system 102% cpu 0.322 total
-./target/release/shotgun > /dev/null  0.34s user 0.00s system 105% cpu 0.318 total
-./target/release/shotgun > /dev/null  0.33s user 0.01s system 111% cpu 0.303 total
+$ xrandr --fb 3840x2160
+$ hyperfine --warmup 15 --min-runs 50 \
+>     'maim > /dev/null' \
+>     'shotgun - > /dev/null'
+Benchmark #1: maim > /dev/null
+  Time (mean ± σ):     629.3 ms ±   3.7 ms    [User: 570.7 ms, System: 52.1 ms]
+  Range (min … max):   624.8 ms … 646.7 ms    50 runs
+ 
+Benchmark #2: shotgun - > /dev/null
+  Time (mean ± σ):     293.0 ms ±   3.2 ms    [User: 239.6 ms, System: 52.9 ms]
+  Range (min … max):   287.8 ms … 298.2 ms    50 runs
+ 
+Summary
+  'shotgun - > /dev/null' ran
+    2.15 ± 0.03 times faster than 'maim > /dev/null'
 ```
 
 Further profiling has shown that the bottleneck in shotgun lies fully within the
@@ -113,37 +102,39 @@ By using an uncompressed format both encoding and decoding performance is improv
 #### Encoding
 
 ```
->>> for i in {1..5}; do time ./target/release/shotgun -f png - > /dev/null; done
-./target/release/shotgun -f png - > /dev/null  0.32s user 0.11s system 99% cpu 0.434 total
-./target/release/shotgun -f png - > /dev/null  0.31s user 0.05s system 99% cpu 0.369 total
-./target/release/shotgun -f png - > /dev/null  0.32s user 0.06s system 99% cpu 0.382 total
-./target/release/shotgun -f png - > /dev/null  0.31s user 0.06s system 99% cpu 0.369 total
-./target/release/shotgun -f png - > /dev/null  0.26s user 0.08s system 99% cpu 0.343 total
-
->>> for i in {1..5}; do time ./target/release/shotgun -f pam - > /dev/null; done
-./target/release/shotgun -f pam - > /dev/null  0.09s user 0.12s system 98% cpu 0.210 total
-./target/release/shotgun -f pam - > /dev/null  0.07s user 0.07s system 99% cpu 0.141 total
-./target/release/shotgun -f pam - > /dev/null  0.10s user 0.05s system 99% cpu 0.148 total
-./target/release/shotgun -f pam - > /dev/null  0.08s user 0.08s system 99% cpu 0.152 total
-./target/release/shotgun -f pam - > /dev/null  0.08s user 0.07s system 99% cpu 0.148 total
+$ hyperfine --warmup 15 --min-runs 50 \
+>     'shotgun -f png - > /dev/null' \
+>     'shotgun -f pam - > /dev/null'
+Benchmark #1: shotgun -f png - > /dev/null
+  Time (mean ± σ):     294.5 ms ±   3.3 ms    [User: 240.0 ms, System: 54.1 ms]
+  Range (min … max):   289.2 ms … 301.4 ms    50 runs
+ 
+Benchmark #2: shotgun -f pam - > /dev/null
+  Time (mean ± σ):     116.8 ms ±   2.8 ms    [User: 62.5 ms, System: 53.7 ms]
+  Range (min … max):   113.8 ms … 122.7 ms    50 runs
+ 
+Summary
+  'shotgun -f pam - > /dev/null' ran
+    2.52 ± 0.07 times faster than 'shotgun -f png - > /dev/null'
 ```
 
 #### Decoding (using ImageMagick to convert to jpg)
 
 ```
->>> for i in {1..5}; do time ./target/release/shotgun -f png - | convert - jpg:- > /dev/null; done
-convert - jpg:- > /dev/null  0.59s user 0.16s system 89% cpu 0.842 total
-convert - jpg:- > /dev/null  0.58s user 0.16s system 95% cpu 0.763 total
-convert - jpg:- > /dev/null  0.55s user 0.20s system 97% cpu 0.764 total
-convert - jpg:- > /dev/null  0.53s user 0.15s system 89% cpu 0.758 total
-convert - jpg:- > /dev/null  0.61s user 0.16s system 100% cpu 0.762 total
-
->>> for i in {1..5}; do time ./target/release/shotgun -f pam - | convert - jpg:- > /dev/null; done
-convert - jpg:- > /dev/null  0.24s user 0.11s system 63% cpu 0.557 total
-convert - jpg:- > /dev/null  0.23s user 0.09s system 70% cpu 0.449 total
-convert - jpg:- > /dev/null  0.22s user 0.10s system 66% cpu 0.490 total
-convert - jpg:- > /dev/null  0.21s user 0.11s system 72% cpu 0.434 total
-convert - jpg:- > /dev/null  0.22s user 0.10s system 69% cpu 0.459 total
+$ hyperfine --warmup 15 --min-runs 50 \
+>     'shotgun -f png - | convert - jpg:- > /dev/null' \
+>     'shotgun -f pam - | convert - jpg:- > /dev/null'
+Benchmark #1: shotgun -f png - | convert - jpg:- > /dev/null
+  Time (mean ± σ):     600.7 ms ±   5.8 ms    [User: 506.4 ms, System: 96.5 ms]
+  Range (min … max):   594.9 ms … 620.7 ms    50 runs
+ 
+Benchmark #2: shotgun -f pam - | convert - jpg:- > /dev/null
+  Time (mean ± σ):     350.4 ms ±   3.9 ms    [User: 217.0 ms, System: 139.3 ms]
+  Range (min … max):   345.5 ms … 367.8 ms    50 runs
+ 
+Summary
+  'shotgun -f pam - | convert - jpg:- > /dev/null' ran
+    1.71 ± 0.03 times faster than 'shotgun -f png - | convert - jpg:- > /dev/null'
 ```
 
 ## Installation
