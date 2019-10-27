@@ -248,7 +248,7 @@ pub fn parse_geometry(g: ffi::CString) -> util::Rect {
         let mut y = 0;
         let mut w = 0;
         let mut h = 0;
-        xlib::XParseGeometry(g.as_ptr() as *const i8, &mut x, &mut y, &mut w, &mut h);
+        xlib::XParseGeometry(g.as_ptr() as *const raw::c_char, &mut x, &mut y, &mut w, &mut h);
 
         util::Rect {
             x: x,
