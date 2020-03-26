@@ -24,7 +24,19 @@ Options:
     -v, --version       Print version and exit
 ```
 
-To use with slop (as a replacement for `maim -s`):
+## Examples
+
+#### To use with hacksaw: take a screenshot and copy to clipboard
+```sh
+#!/usr/bin/env bash
+
+set -e
+
+selection=$(hacksaw -f "-i %i -g %g")
+shotgun $selection - | xclip -t 'image/png' -selection clipboard
+```
+
+#### To use with slop (as a replacement for `maim -s`):
 ```bash
 #!/usr/bin/env bash
 
