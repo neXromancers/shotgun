@@ -38,7 +38,7 @@ shotgun $selection - | xclip -t 'image/png' -selection clipboard
 
 #### To use with slop (as a replacement for `maim -s`):
 ```bash
-#!/usr/bin/env bash
+#!/bin/sh
 
 set -e
 
