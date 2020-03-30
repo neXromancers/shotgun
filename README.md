@@ -28,9 +28,7 @@ Options:
 
 #### To use with hacksaw: take a screenshot and copy to clipboard
 ```sh
-#!/usr/bin/env bash
-
-set -e
+#!/bin/sh -e
 
 selection=$(hacksaw -f "-i %i -g %g")
 shotgun $selection - | xclip -t 'image/png' -selection clipboard
@@ -38,9 +36,7 @@ shotgun $selection - | xclip -t 'image/png' -selection clipboard
 
 #### To use with slop (as a replacement for `maim -s`):
 ```bash
-#!/bin/sh
-
-set -e
+#!/bin/sh -e
 
 sel=$(slop -f "-i %i -g %g")
 shotgun $sel $*
