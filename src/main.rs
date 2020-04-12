@@ -38,6 +38,7 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optopt("f", "format", "Output format", "png/pam");
+    opts.optflag("p", "print-path", "Print filename on stdout");
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
@@ -192,6 +193,14 @@ fn run() -> i32 {
                 eprintln!("Failed to create {}: {}", path, e);
                 return 1
             },
+        }
+    }
+
+    if matches.opt_present("p") {
+        if path == "-" {
+            eprintln!("stdout is used to print the image, -p option ignored");
+        } else {
+            println!("{}", path);
         }
     }
 

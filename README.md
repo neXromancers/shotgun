@@ -20,6 +20,7 @@ Options:
                         Area to capture
     -f, --format png/pam
                         Output format
+    -p, --print-path    Print filename on stdout
     -h, --help          Print help and exit
     -v, --version       Print version and exit
 ```
