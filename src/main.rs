@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io;
 use std::path::Path;
 use std::process;
+use std::thread;
 
 extern crate getopts;
 use getopts::Options;
@@ -38,6 +39,7 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optopt("f", "format", "Output format", "png/pam");
+    opts.optopt("d", "delay", "Delay capture", "seconds");
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
@@ -120,6 +122,16 @@ fn run() -> i32 {
             w: window_rect.w,
             h: window_rect.h,
         },
+    };
+
+    if let Some(delay) = matches.opt_str("d") {
+        match delay.parse::<u64>() {
+            Ok(secs) => thread::sleep(std::time::Duration::from_secs(secs)),
+            Err(_) => {
+                eprintln!("Invalid delay \"{}\" specified", delay);
+                return 1;
+            },
+        }
     };
 
     let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {

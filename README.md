@@ -20,6 +20,7 @@ Options:
                         Area to capture
     -f, --format png/pam
                         Output format
+    -d, --delay seconds Delay capture
     -h, --help          Print help and exit
     -v, --version       Print version and exit
 ```
