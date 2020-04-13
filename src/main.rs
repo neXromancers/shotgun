@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io;
 use std::path::Path;
 use std::process;
+use std::time;
 
 extern crate getopts;
 use getopts::Options;
@@ -17,7 +18,6 @@ use image::Pixel;
 use image::RgbaImage;
 use image::Rgba;
 extern crate libc;
-extern crate time;
 extern crate x11;
 use x11::xlib;
 
@@ -174,7 +174,13 @@ fn run() -> i32 {
         }
     }
 
-    let ts_path = format!("{}.{}", time::get_time().sec, output_ext);
+    let ts_path = {
+        let now = match time::SystemTime::now().duration_since(time::UNIX_EPOCH) {
+            Ok(n) => n.as_secs(),
+            Err(_) => 0,
+        };
+        format!("{}.{}", now, output_ext)
+    };
     let path = match matches.free.get(0) {
         Some(p) => p,
         None => {
