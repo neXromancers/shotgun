@@ -86,8 +86,8 @@ fn run() -> i32 {
 
     let output_ext = matches.opt_str("f").unwrap_or("png".to_string()).to_lowercase();
     let output_format = match output_ext.as_ref() {
-        "png" => image::ImageOutputFormat::PNG,
-        "pam" => image::ImageOutputFormat::PNM(image::pnm::PNMSubtype::ArbitraryMap),
+        "png" => image::ImageOutputFormat::Png,
+        "pam" => image::ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap),
         _ => {
             eprintln!("Invalid image format specified");
             return 1;
@@ -127,7 +127,7 @@ fn run() -> i32 {
     };
 
     let mut image = match image.into_image_buffer() {
-        Some(i) => image::ImageRgba8(i),
+        Some(i) => image::DynamicImage::ImageRgba8(i),
         None => {
             eprintln!("Failed to convert captured framebuffer, only 24/32 \
                       bit (A)RGB8 is supported");
@@ -158,10 +158,11 @@ fn run() -> i32 {
 
                         let mut sub_src = image.sub_image(sub.x as u32, sub.y as u32,
                                                           sub.w as u32, sub.h as u32);
-                        masked.copy_from(&mut sub_src, sub.x as u32, sub.y as u32);
+                        masked.copy_from(&mut sub_src, sub.x as u32, sub.y as u32)
+                            .expect("Failed to copy sub-image");
                     }
 
-                    image = image::ImageRgba8(masked);
+                    image = image::DynamicImage::ImageRgba8(masked);
                 }
             },
             None => {
