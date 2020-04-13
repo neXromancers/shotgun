@@ -15,7 +15,7 @@ use libc;
 use x11::xlib;
 use x11::xrandr;
 
-use util;
+use crate::util;
 
 pub const ALL_PLANES: libc::c_ulong = !0;
 
@@ -109,7 +109,7 @@ impl Display {
         }
     }
 
-    pub fn get_screen_rects(&self, root: xlib::Window) -> Option<ScreenRectIter> {
+    pub fn get_screen_rects(&self, root: xlib::Window) -> Option<ScreenRectIter<'_>> {
         unsafe {
             let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, root);
 

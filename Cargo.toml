@@ -6,6 +6,7 @@ authors = ["Dan Elkouby <streetwalkermc@gmail.com>"]
 license = "MPL-2.0"
 repository = "https://github.com/neXromancers/shotgun"
 build = "build.rs"
+edition = "2018"
 
 [dependencies]
 getopts = "0.2"

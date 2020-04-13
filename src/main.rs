@@ -10,20 +10,16 @@ use std::path::Path;
 use std::process;
 use std::time;
 
-extern crate getopts;
 use getopts::Options;
-extern crate image;
 use image::GenericImage;
 use image::Pixel;
 use image::RgbaImage;
 use image::Rgba;
-extern crate libc;
-extern crate x11;
 use x11::xlib;
 
 mod util;
 mod xwrap;
-use xwrap::Display;
+use crate::xwrap::Display;
 
 fn usage(progname: &str, opts: getopts::Options) {
     let brief = format!("Usage: {} [options] [file]", progname);
