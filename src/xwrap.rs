@@ -61,8 +61,9 @@ impl Display {
 
     pub fn get_window_rect(&self, window: xlib::Window) -> util::Rect {
         unsafe {
-            let mut attrs = mem::uninitialized();
-            xlib::XGetWindowAttributes(self.handle, window, &mut attrs);
+            let mut attrs = mem::MaybeUninit::uninit();
+            xlib::XGetWindowAttributes(self.handle, window, attrs.as_mut_ptr());
+            let attrs = attrs.assume_init();
 
             let mut root = 0;
             let mut parent = 0;
