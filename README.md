@@ -147,8 +147,11 @@ Summary
 
 ## Installation
 
-- Manual: Make sure you have a recent Rust toolchain. Clone this repo, then run
-  `cargo install --path .`.
-- [crates.io](https://crates.io/crates/shotgun): `cargo install shotgun`
+- From source:
+  - install a recent Rust toolchain, libx11 and libxrandr (depending on your
+    distribution, you may need to install development headers separately)
+  - clone this repository and run `cargo install --path .`
+  - or install from [crates.io](https://crates.io/crates/shotgun):
+    `cargo install shotgun`
 - [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
 - Other distros: make a pull request to add your package or build script!
