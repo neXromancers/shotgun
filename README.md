@@ -145,6 +145,10 @@ Summary
     1.71 ± 0.03 times faster than 'shotgun -f png - | convert - jpg:- > /dev/null'
 ```
 
+## Build requirements
+
+- Debian/Ubuntu: `apt-get install libx11-dev libxrandr-dev`
+
 ## Installation
 
 - Manual: Make sure you have a recent Rust toolchain. Clone this repo, then run
