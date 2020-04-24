@@ -39,7 +39,7 @@ shotgun $selection - | xclip -t 'image/png' -selection clipboard
 #!/bin/sh -e
 
 sel=$(slop -f "-i %i -g %g")
-shotgun $sel $*
+shotgun $sel "$1"
 ```
 
 ## shotgun vs maim
