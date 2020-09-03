@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::ffi;
+use std::ffi::CString;
 use std::mem;
 use std::os::raw;
 use std::ptr;
@@ -35,7 +35,7 @@ pub struct ScreenRectIter<'a> {
 }
 
 impl Display {
-    pub fn open(name: Option<ffi::CString>) -> Option<Display> {
+    pub fn open(name: Option<CString>) -> Option<Display> {
         unsafe {
             let name = match name {
                 None => ptr::null(),
@@ -243,7 +243,8 @@ impl<'a> Drop for ScreenRectIter<'a> {
     }
 }
 
-pub fn parse_geometry(g: ffi::CString) -> util::Rect {
+pub fn parse_geometry(g: &str) -> util::Rect {
+    let g = CString::new(g).expect("Failed to convert CString");
     unsafe {
         let mut x = 0;
         let mut y = 0;
