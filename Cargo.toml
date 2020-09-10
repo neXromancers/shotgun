@@ -21,3 +21,6 @@ features = ["png", "pnm"]
 [dependencies.x11]
 version = "2.18"
 features = ["xlib", "xrandr"]
+
+[build-dependencies]
+anyhow = "1.0.32"
