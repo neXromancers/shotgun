@@ -2,18 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::ffi;
-use std::mem;
-use std::os::raw;
-use std::ptr;
-use std::slice;
+use std::{ffi, mem, os::raw, ptr, slice};
 
-use image::Pixel;
-use image::Rgba;
-use image::RgbaImage;
+use image::{Pixel, Rgba, RgbaImage};
 use libc;
-use x11::xlib;
-use x11::xrandr;
+use x11::{xlib, xrandr};
 
 use crate::util;
 

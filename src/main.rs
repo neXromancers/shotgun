@@ -2,19 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::env;
-use std::ffi::CString;
-use std::fs::File;
-use std::io;
-use std::path::Path;
-use std::process;
-use std::time;
+use std::{env, ffi::CString, fs::File, io, path::Path, process, time};
 
 use getopts::Options;
-use image::GenericImage;
-use image::Pixel;
-use image::Rgba;
-use image::RgbaImage;
+use image::{GenericImage, Pixel, Rgba, RgbaImage};
 use x11::xlib;
 
 mod util;
