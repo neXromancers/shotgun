@@ -13,7 +13,7 @@ use std::{
     process, time,
 };
 
-use image::{GenericImage, Pixel, Rgba, RgbaImage};
+use image::{GenericImage, ImageOutputFormat, Pixel, Rgba, RgbaImage};
 use x11::xlib;
 
 mod util;
@@ -27,7 +27,7 @@ fn usage(progname: impl fmt::Display, options: &getopts::Options) {
 
 struct Opts {
     format: Option<String>,
-    geometry: Option<String>,
+    geometry: Option<CString>,
     id: Option<String>,
     path: Option<OsString>,
     #[allow(dead_code)]
@@ -76,7 +76,15 @@ impl Opts {
 
         Ok(Self {
             format: matches.opt_str("f"),
-            geometry: matches.opt_str("g"),
+            geometry: matches
+                .opt_str("g")
+                .map(|s| {
+                    CString::new(s).map_err(|_e| {
+                        eprintln!("Failed to convert geometry to CString (contains NUL?)");
+                        1
+                    })
+                })
+                .transpose()?,
             id: matches.opt_str("i"),
             path: matches.free.get(0).map(OsString::from),
             verbosity: {
@@ -93,88 +101,148 @@ impl Opts {
     }
 }
 
-fn run() -> i32 {
+enum ParsedPath<P> {
+    Path(P),
+    Stdout,
+}
+
+impl<P: std::cmp::PartialEq<&'static str>> From<P> for ParsedPath<P> {
+    fn from(path: P) -> Self {
+        if path == "-" {
+            Self::Stdout
+        } else {
+            Self::Path(path)
+        }
+    }
+}
+impl<P> ParsedPath<P> {
+    fn map_path<Q, F>(self, f: F) -> ParsedPath<Q>
+    where
+        F: FnOnce(P) -> Q,
+    {
+        match self {
+            Self::Path(path) => ParsedPath::Path(f(path)),
+            Self::Stdout => ParsedPath::Stdout,
+        }
+    }
+}
+
+struct ParsedOpts {
+    geometry: Option<util::Rect>,
+    output_ext: String,
+    output_format: ImageOutputFormat,
+    path: Option<ParsedPath<PathBuf>>,
+    #[allow(dead_code)]
+    verbosity: isize,
+    window: Option<xlib::Window>,
+}
+
+impl TryFrom<Opts> for ParsedOpts {
+    type Error = i32;
+    fn try_from(opts: Opts) -> Result<Self, Self::Error> {
+        let verbosity = opts.verbosity;
+        let window = opts
+            .id
+            .map(|s| {
+                util::parse_int::<xlib::Window>(&s).map_err(|_| {
+                    eprintln!("Window ID is not a valid integer");
+                    eprintln!(
+                        "Accepted values are decimal, hex (0x*), octal (0o*) and binary (0b*)"
+                    );
+                    1
+                })
+            })
+            .transpose()?;
+        let output_ext = opts
+            .format
+            .unwrap_or_else(|| String::from("png"))
+            .to_lowercase();
+        let output_format = match output_ext.as_ref() {
+            "png" => Ok(ImageOutputFormat::Png),
+            "pam" => Ok(ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap)),
+            _ => {
+                eprintln!("Invalid image format specified");
+                Err(1)
+            }
+        }?;
+        let geometry = opts.geometry.map(xwrap::parse_geometry);
+        let path = opts
+            .path
+            .map(|p| ParsedPath::from(p).map_path(PathBuf::from));
+        Ok(ParsedOpts {
+            geometry,
+            output_ext,
+            output_format,
+            path,
+            verbosity,
+            window,
+        })
+    }
+}
+
+fn timestamp_path(ext: &str) -> PathBuf {
+    let now = match time::SystemTime::now().duration_since(time::UNIX_EPOCH) {
+        Ok(n) => n.as_secs(),
+        Err(_) => 0,
+    };
+    let ts_path = format!("{}.{}", now, ext);
+    PathBuf::from(ts_path)
+}
+
+fn run() -> Result<i32, i32> {
     let args: Vec<OsString> = env::args_os().collect();
 
-    let opts = match Opts::new(&args[1..]) {
-        Ok(v) => v,
-        Err(status) => return status,
-    };
+    let opts = Opts::new(&args[1..])?;
 
-    let display = match Display::open(None) {
-        Some(d) => d,
-        None => {
-            eprintln!("Failed to open display");
-            return 1;
-        }
-    };
+    let parsed_opts = ParsedOpts::try_from(opts)?;
+
+    let display = Display::open(None).ok_or_else(|| {
+        eprintln!("Failed to open display");
+        1
+    })?;
     let root = display.get_default_root();
 
-    let window: xlib::Window = match opts.id {
-        Some(s) => match util::parse_int(&s) {
-            Ok(r) => r,
-            Err(_) => {
-                eprintln!("Window ID is not a valid integer");
-                eprintln!("Accepted values are decimal, hex (0x*), octal (0o*) and binary (0b*)");
-                return 1;
-            }
-        },
-        None => root,
-    };
-
-    let output_ext = opts.format.unwrap_or("png".to_string()).to_lowercase();
-    let output_format = match output_ext.as_ref() {
-        "png" => image::ImageOutputFormat::Png,
-        "pam" => image::ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap),
-        _ => {
-            eprintln!("Invalid image format specified");
-            return 1;
-        }
-    };
+    let window: xlib::Window = parsed_opts.window.unwrap_or(root);
 
     let window_rect = display.get_window_rect(window);
-    let sel = match opts.geometry {
-        Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
-            .intersection(window_rect)
-        {
-            Some(sel) => util::Rect {
-                // Selection is relative to the root window (whole screen)
-                x: sel.x - window_rect.x,
-                y: sel.y - window_rect.y,
-                w: sel.w,
-                h: sel.h,
-            },
-            None => {
+    let sel = parsed_opts
+        .geometry
+        .map(|g| {
+            g.intersection(window_rect).ok_or_else(|| {
                 eprintln!("Invalid geometry");
-                return 1;
-            }
-        },
-        None => util::Rect {
+                1
+            })
+        })
+        .transpose()?
+        .map(|sel| util::Rect {
+            // Selection is relative to the root window (whole screen)
+            x: sel.x - window_rect.x,
+            y: sel.y - window_rect.y,
+            w: sel.w,
+            h: sel.h,
+        })
+        .unwrap_or_else(|| util::Rect {
             x: 0,
             y: 0,
             w: window_rect.w,
             h: window_rect.h,
-        },
-    };
+        });
 
-    let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {
-        Some(i) => i,
-        None => {
+    let image = display
+        .get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap)
+        .ok_or_else(|| {
             eprintln!("Failed to get image from X");
-            return 1;
-        }
-    };
+            1
+        })?;
 
-    let mut image = match image.into_image_buffer() {
-        Some(i) => image::DynamicImage::ImageRgba8(i),
-        None => {
+    let mut image =
+        image::DynamicImage::ImageRgba8(image.into_image_buffer().ok_or_else(|| {
             eprintln!(
                 "Failed to convert captured framebuffer, only 24/32 \
-                      bit (A)RGB8 is supported"
+                   bit (A)RGB8 is supported"
             );
-            return 1;
-        }
-    };
+            1
+        })?);
 
     // When capturing the root window, attempt to mask the off-screen areas
     if window == root {
@@ -216,36 +284,32 @@ fn run() -> i32 {
         }
     }
 
-    let path: OsString = opts.path.unwrap_or_else(|| {
-        let now = match time::SystemTime::now().duration_since(time::UNIX_EPOCH) {
-            Ok(n) => n.as_secs(),
-            Err(_) => 0,
-        };
-        let ts_path = format!("{}.{}", now, output_ext);
-        eprintln!("No output specified, defaulting to {}", ts_path);
-        OsString::from(ts_path)
-    });
-
-    if path == "-" {
-        image
-            .write_to(&mut io::stdout(), output_format)
-            .expect("Writing to stdout failed");
-    } else {
-        let path = PathBuf::from(path);
-        match File::create(&path) {
-            Ok(mut f) => image
-                .write_to(&mut f, output_format)
-                .expect("Writing to file failed"),
-            Err(e) => {
-                eprintln!("Failed to create {}: {}", path.display(), e);
-                return 1;
-            }
-        }
+    let output_ext = parsed_opts.output_ext;
+    match parsed_opts.path.unwrap_or_else(|| {
+        let ts_path = timestamp_path(&output_ext);
+        eprintln!("No output specified, defaulting to {}", ts_path.display());
+        ParsedPath::Path(ts_path)
+    }) {
+        ParsedPath::Stdout => image
+            .write_to(
+                &mut io::BufWriter::new(io::stdout().lock()),
+                parsed_opts.output_format,
+            )
+            .expect("Writing to stdout failed"),
+        ParsedPath::Path(p) => image
+            .write_to(
+                &mut io::BufWriter::new(File::create(&p).map_err(|e| {
+                    eprintln!("Failed to create {}: {}", p.display(), e);
+                    1
+                })?),
+                parsed_opts.output_format,
+            )
+            .expect("Writing to file failed"),
     }
 
-    0
+    Ok(0)
 }
 
 fn main() {
-    process::exit(run());
+    process::exit(run().map_or_else(|v| v, |v| v));
 }
