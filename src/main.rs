@@ -8,7 +8,7 @@ use std::{
     ffi::{CString, OsStr, OsString},
     fmt,
     fs::File,
-    io,
+    io::{self, Write},
     path::{Path, PathBuf},
     process, time,
 };
@@ -290,21 +290,26 @@ fn run() -> Result<i32, i32> {
         eprintln!("No output specified, defaulting to {}", ts_path.display());
         ParsedPath::Path(ts_path)
     }) {
-        ParsedPath::Stdout => image
-            .write_to(
-                &mut io::BufWriter::new(io::stdout().lock()),
-                parsed_opts.output_format,
-            )
-            .expect("Writing to stdout failed"),
-        ParsedPath::Path(p) => image
-            .write_to(
-                &mut io::BufWriter::new(File::create(&p).map_err(|e| {
-                    eprintln!("Failed to create {}: {}", p.display(), e);
-                    1
-                })?),
-                parsed_opts.output_format,
-            )
-            .expect("Writing to file failed"),
+        ParsedPath::Stdout => {
+            let stdout = io::stdout();
+            let mut writer = io::BufWriter::new(stdout.lock());
+            let err_msg = "Writing to stdout failed";
+            image
+                .write_to(&mut writer, parsed_opts.output_format)
+                .expect(err_msg);
+            writer.flush().expect(err_msg);
+        }
+        ParsedPath::Path(p) => {
+            let mut writer = io::BufWriter::new(File::create(&p).map_err(|e| {
+                eprintln!("Failed to create {}: {}", p.display(), e);
+                1
+            })?);
+            let err_msg = "Writing to file failed";
+            image
+                .write_to(&mut writer, parsed_opts.output_format)
+                .expect(err_msg);
+            writer.flush().expect(err_msg);
+        }
     }
 
     Ok(0)
