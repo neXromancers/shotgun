@@ -2,9 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::{env, ffi::CString, fs::File, io, path::Path, process, time};
+use std::{
+    convert::TryFrom,
+    env,
+    ffi::{CString, OsStr, OsString},
+    fmt,
+    fs::File,
+    io,
+    path::{Path, PathBuf},
+    process, time,
+};
 
-use getopts::Options;
 use image::{GenericImage, Pixel, Rgba, RgbaImage};
 use x11::xlib;
 
@@ -12,50 +20,86 @@ mod util;
 mod xwrap;
 use crate::xwrap::Display;
 
-fn usage(progname: &str, opts: getopts::Options) {
+fn usage(progname: impl fmt::Display, options: &getopts::Options) {
     let brief = format!("Usage: {} [options] [file]", progname);
-    eprint!("{}", opts.usage(&brief));
+    eprint!("{}", options.usage(&brief));
+}
+
+struct Opts {
+    format: Option<String>,
+    geometry: Option<String>,
+    id: Option<String>,
+    path: Option<OsString>,
+    #[allow(dead_code)]
+    verbosity: isize,
+}
+
+impl Opts {
+    fn init_options(options: &mut getopts::Options) -> &mut getopts::Options {
+        options
+            .optopt("i", "id", "Window to capture", "ID")
+            .optopt("g", "geometry", "Area to capture", "WxH+X+Y")
+            .optopt("f", "format", "Output format", "png/pam")
+            .optflagmulti("q", "quiet", "Decrease informational output")
+            .optflagmulti("v", "verbose", "Increase informational output")
+            .optflag("h", "help", "Print help and exit")
+            .optflag("V", "version", "Print version and exit")
+    }
+
+    fn parse_options<S: AsRef<OsStr>>(args: &[S], options: &getopts::Options) -> Result<Self, i32> {
+        let progname = Path::new(args[0].as_ref()).display();
+        let matches = options.parse(args.as_ref()).map_err(|e| {
+            eprintln!("{}", e.to_string());
+            usage(&progname, options);
+            1
+        })?;
+
+        if matches.opt_present("h") {
+            usage(&progname, options);
+            return Err(0);
+        }
+
+        if matches.opt_present("V") {
+            eprintln!(
+                "shotgun {}",
+                option_env!("GIT_VERSION").unwrap_or_else(|| env!("CARGO_PKG_VERSION"))
+            );
+            return Err(0);
+        }
+
+        // One loose argument allowed (file name)
+        if matches.free.len() > 1 {
+            eprintln!("Too many arguments");
+            usage(&progname, &options);
+            return Err(1);
+        }
+
+        Ok(Self {
+            format: matches.opt_str("f"),
+            geometry: matches.opt_str("g"),
+            id: matches.opt_str("i"),
+            path: matches.free.get(0).map(OsString::from),
+            verbosity: {
+                use std::isize::MAX;
+                let verbose = isize::try_from(matches.opt_count("v")).unwrap_or(MAX);
+                let quiet = isize::try_from(matches.opt_count("q")).unwrap_or(MAX);
+                verbose.saturating_sub(quiet)
+            },
+        })
+    }
+
+    fn new<S: AsRef<OsStr>>(args: &[S]) -> Result<Self, i32> {
+        Self::parse_options(args, Self::init_options(&mut getopts::Options::new()))
+    }
 }
 
 fn run() -> i32 {
-    let args: Vec<String> = env::args().collect();
-    let progname = args[0].clone();
+    let args: Vec<OsString> = env::args_os().collect();
 
-    let mut opts = Options::new();
-    opts.optopt("i", "id", "Window to capture", "ID");
-    opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
-    opts.optopt("f", "format", "Output format", "png/pam");
-    opts.optflag("h", "help", "Print help and exit");
-    opts.optflag("v", "version", "Print version and exit");
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => {
-            eprintln!("{}", f.to_string());
-            usage(&progname, opts);
-            return 1;
-        }
+    let opts = match Opts::new(&args[1..]) {
+        Ok(v) => v,
+        Err(status) => return status,
     };
-
-    if matches.opt_present("h") {
-        usage(&progname, opts);
-        return 0;
-    }
-
-    // One loose argument allowed (file name)
-    if matches.free.len() > 1 {
-        eprintln!("Too many arguments");
-        usage(&progname, opts);
-        return 1;
-    }
-
-    if matches.opt_present("v") {
-        eprintln!(
-            "shotgun {}",
-            option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
-        );
-        return 0;
-    }
 
     let display = match Display::open(None) {
         Some(d) => d,
@@ -66,8 +110,8 @@ fn run() -> i32 {
     };
     let root = display.get_default_root();
 
-    let window = match matches.opt_str("i") {
-        Some(s) => match util::parse_int::<xlib::Window>(&s) {
+    let window: xlib::Window = match opts.id {
+        Some(s) => match util::parse_int(&s) {
             Ok(r) => r,
             Err(_) => {
                 eprintln!("Window ID is not a valid integer");
@@ -78,10 +122,7 @@ fn run() -> i32 {
         None => root,
     };
 
-    let output_ext = matches
-        .opt_str("f")
-        .unwrap_or("png".to_string())
-        .to_lowercase();
+    let output_ext = opts.format.unwrap_or("png".to_string()).to_lowercase();
     let output_format = match output_ext.as_ref() {
         "png" => image::ImageOutputFormat::Png,
         "pam" => image::ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap),
@@ -92,7 +133,7 @@ fn run() -> i32 {
     };
 
     let window_rect = display.get_window_rect(window);
-    let sel = match matches.opt_str("g") {
+    let sel = match opts.geometry {
         Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
             .intersection(window_rect)
         {
@@ -175,32 +216,28 @@ fn run() -> i32 {
         }
     }
 
-    let ts_path = {
+    let path: OsString = opts.path.unwrap_or_else(|| {
         let now = match time::SystemTime::now().duration_since(time::UNIX_EPOCH) {
             Ok(n) => n.as_secs(),
             Err(_) => 0,
         };
-        format!("{}.{}", now, output_ext)
-    };
-    let path = match matches.free.get(0) {
-        Some(p) => p,
-        None => {
-            eprintln!("No output specified, defaulting to {}", ts_path);
-            ts_path.as_str()
-        }
-    };
+        let ts_path = format!("{}.{}", now, output_ext);
+        eprintln!("No output specified, defaulting to {}", ts_path);
+        OsString::from(ts_path)
+    });
 
     if path == "-" {
         image
             .write_to(&mut io::stdout(), output_format)
             .expect("Writing to stdout failed");
     } else {
-        match File::create(&Path::new(&path)) {
+        let path = PathBuf::from(path);
+        match File::create(&path) {
             Ok(mut f) => image
                 .write_to(&mut f, output_format)
                 .expect("Writing to file failed"),
             Err(e) => {
-                eprintln!("Failed to create {}: {}", path, e);
+                eprintln!("Failed to create {}: {}", path.display(), e);
                 return 1;
             }
         }

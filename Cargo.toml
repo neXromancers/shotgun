@@ -1,7 +1,7 @@
 [package]
 name = "shotgun"
 description = "Minimal X screenshot utility"
-version = "2.2.0"
+version = "3.0.0-alpha"
 authors = ["Dan Elkouby <streetwalkermc@gmail.com>"]
 license = "MPL-2.0"
 repository = "https://github.com/neXromancers/shotgun"
