@@ -156,4 +156,3 @@ Summary
 - [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
 - [Nix/NixOS from 20.03 onwards](https://github.com/NixOS/nixpkgs-channels/blob/nixos-20.09/pkgs/tools/graphics/shotgun/default.nix) `nix-env -iA nixpkgs.shotgun`
 - Other distros: make a pull request to add your package or build script!
-
