@@ -154,5 +154,5 @@ Summary
   - or install from [crates.io](https://crates.io/crates/shotgun):
     `cargo install shotgun`
 - [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
-- [Nix/NixOS from 20.03 onwards](https://github.com/NixOS/nixpkgs-channels/blob/nixos-20.03/pkgs/tools/graphics/shotgun/default.nix) `nix-env -iA nixpkgs.shotgun`
+- [Nix/NixOS](https://github.com/NixOS/nixpkgs-channels/blob/nixos-unstable/pkgs/tools/graphics/shotgun/default.nix): `nixpkgs.shotgun`
 - Other distros: make a pull request to add your package or build script!
