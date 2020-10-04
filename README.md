@@ -87,11 +87,11 @@ $ hyperfine --warmup 15 --min-runs 50 \
 Benchmark #1: maim > /dev/null
   Time (mean ± σ):     629.3 ms ±   3.7 ms    [User: 570.7 ms, System: 52.1 ms]
   Range (min … max):   624.8 ms … 646.7 ms    50 runs
- 
+
 Benchmark #2: shotgun - > /dev/null
   Time (mean ± σ):     293.0 ms ±   3.2 ms    [User: 239.6 ms, System: 52.9 ms]
   Range (min … max):   287.8 ms … 298.2 ms    50 runs
- 
+
 Summary
   'shotgun - > /dev/null' ran
     2.15 ± 0.03 times faster than 'maim > /dev/null'
@@ -116,11 +116,11 @@ $ hyperfine --warmup 15 --min-runs 50 \
 Benchmark #1: shotgun -f png - > /dev/null
   Time (mean ± σ):     294.5 ms ±   3.3 ms    [User: 240.0 ms, System: 54.1 ms]
   Range (min … max):   289.2 ms … 301.4 ms    50 runs
- 
+
 Benchmark #2: shotgun -f pam - > /dev/null
   Time (mean ± σ):     116.8 ms ±   2.8 ms    [User: 62.5 ms, System: 53.7 ms]
   Range (min … max):   113.8 ms … 122.7 ms    50 runs
- 
+
 Summary
   'shotgun -f pam - > /dev/null' ran
     2.52 ± 0.07 times faster than 'shotgun -f png - > /dev/null'
@@ -135,11 +135,11 @@ $ hyperfine --warmup 15 --min-runs 50 \
 Benchmark #1: shotgun -f png - | convert - jpg:- > /dev/null
   Time (mean ± σ):     600.7 ms ±   5.8 ms    [User: 506.4 ms, System: 96.5 ms]
   Range (min … max):   594.9 ms … 620.7 ms    50 runs
- 
+
 Benchmark #2: shotgun -f pam - | convert - jpg:- > /dev/null
   Time (mean ± σ):     350.4 ms ±   3.9 ms    [User: 217.0 ms, System: 139.3 ms]
   Range (min … max):   345.5 ms … 367.8 ms    50 runs
- 
+
 Summary
   'shotgun -f pam - | convert - jpg:- > /dev/null' ran
     1.71 ± 0.03 times faster than 'shotgun -f png - | convert - jpg:- > /dev/null'
@@ -154,4 +154,5 @@ Summary
   - or install from [crates.io](https://crates.io/crates/shotgun):
     `cargo install shotgun`
 - [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
+- [Nix/NixOS](https://github.com/NixOS/nixpkgs-channels/blob/nixos-unstable/pkgs/tools/graphics/shotgun/default.nix): `nixpkgs.shotgun`
 - Other distros: make a pull request to add your package or build script!
