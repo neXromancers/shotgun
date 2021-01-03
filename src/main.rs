@@ -2,15 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::io;
-use std::path::Path;
 use std::env;
 use std::fs::File;
+use std::io;
+use std::path::Path;
 use std::process;
 use std::time;
 
 use getopts::Options;
-
 
 fn usage(progname: &str, opts: getopts::Options) {
     let brief = format!("Usage: {} [options] [file]", progname);
@@ -50,11 +49,17 @@ fn run() -> i32 {
     }
 
     if matches.opt_present("v") {
-        eprintln!("shotgun {}", option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")));
+        eprintln!(
+            "shotgun {}",
+            option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
+        );
         return 0;
     }
 
-    let output_ext = matches.opt_str("f").unwrap_or("png".to_string()).to_lowercase();
+    let output_ext = matches
+        .opt_str("f")
+        .unwrap_or("png".to_string())
+        .to_lowercase();
     let output_format = match output_ext.as_ref() {
         "png" => image::ImageOutputFormat::Png,
         "pam" => image::ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap),
@@ -64,10 +69,17 @@ fn run() -> i32 {
         }
     };
 
-    let image = shotgun::capture(
-        matches.opt_str("i"),
-        matches.opt_str("g"),
-    )
+    let window_id = matches
+        .opt_str("i")
+        .map(|id| match parse_int::parse::<u64>(&id) {
+            Ok(r) => r,
+            Err(_) => {
+                eprintln!("Window ID {:?} is not a valid integer\nAccepted values are decimal, hex (0x*), octal (0o*) and binary (0b*)", id);
+                return 2;
+            }
+        });
+
+    let image = shotgun::capture(window_id, matches.opt_str("g"))
         .map_err(|e| eprintln!("{}", e))
         .expect("unable to capture");
 
@@ -83,18 +95,22 @@ fn run() -> i32 {
         None => {
             eprintln!("No output specified, defaulting to {}", ts_path);
             ts_path.as_str()
-        },
+        }
     };
 
     if path == "-" {
-        image.write_to(&mut io::stdout(), output_format).expect("Writing to stdout failed");
+        image
+            .write_to(&mut io::stdout(), output_format)
+            .expect("Writing to stdout failed");
     } else {
         match File::create(&Path::new(&path)) {
-            Ok(mut f) => image.write_to(&mut f, output_format).expect("Writing to file failed"),
+            Ok(mut f) => image
+                .write_to(&mut f, output_format)
+                .expect("Writing to file failed"),
             Err(e) => {
                 eprintln!("Failed to create {}: {}", path, e);
-                return 1
-            },
+                return 1;
+            }
         }
     }
 

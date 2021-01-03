@@ -8,10 +8,14 @@ repository = "https://github.com/neXromancers/shotgun"
 build = "build.rs"
 edition = "2018"
 
+[features]
+default = []
+cli = ["getopts", "parse_int"]
+
 
 [dependencies]
 libc = "0.2"
-num-traits = "0.2"
+parse_int = { version = "0.4", optional = true }
 getopts = { version = "0.2", optional = true }
 
 
@@ -26,5 +30,5 @@ features = ["xlib", "xrandr"]
 
 [[bin]]
 name = "shotgun"
-required-features = ["getopts"]
+required-features = ["cli"]
 

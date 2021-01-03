@@ -142,6 +142,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "parse_int"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82db48cac18f0963b10ddad303fa88447b95bbe0e6dbe3385f98402b63d0cc48"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,12 +170,12 @@ dependencies = [
 
 [[package]]
 name = "shotgun"
-version = "2.4.0"
+version = "2.3.0"
 dependencies = [
  "getopts",
  "image",
  "libc",
- "num-traits",
+ "parse_int",
  "x11",
 ]
 
