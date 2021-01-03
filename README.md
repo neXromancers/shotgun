@@ -150,14 +150,14 @@ Summary
 - From source:
   - install a recent Rust toolchain, libx11 and libxrandr (depending on your
     distribution, you may need to install development headers separately)
-  - clone this repository and run `cargo install --features="getopts" --path .`
+  - clone this repository and run `cargo install --features="cli" --path .`
   - or install from [crates.io](https://crates.io/crates/shotgun):
-    `cargo install --features="getopts" shotgun`
+    `cargo install --features="cli" shotgun`
 - [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
 - Other distros: make a pull request to add your package or build script!
 
 ### Running from Source
 
 ```
-cargo run --features="getopts" --release
+cargo run --features="cli" --release
 ```
