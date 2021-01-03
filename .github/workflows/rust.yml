@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    branches: [ main, master, cratify ]
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
 
