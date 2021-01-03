@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install x11
-      run: sudo apt-get update && sudo apt-get install -yqq libx11-dev pkg-config build-essential
+      run: sudo apt-get update && sudo apt-get install -yqq libx11-dev pkg-config build-essential libxrandr-dev
     - name: Build
       run: cargo build
     - name: Build CLI
