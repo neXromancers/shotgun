@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ master, cratify ]
+    branches: [ main, master, cratify ]
   pull_request:
-    branches: [ master ]
+    branches: [ main, master ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install x11
+      run: sudo apt-get update && sudo apt-get install -yqq libx11-dev
     - name: Build
       run: cargo build
     - name: Build CLI
