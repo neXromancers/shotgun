@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-//pub use image;
 use image::DynamicImage;
 use image::GenericImage;
 use image::Pixel;
@@ -34,10 +33,7 @@ pub fn capture(
     };
 
     let root = display.get_default_root();
-    let window = match window_id {
-        Some(id) => id,
-        None => root,
-    };
+    let window = window_id.unwrap_or(root);
 
     let window_rect = display.get_window_rect(window);
     let sel = match window_geometry {
@@ -63,16 +59,12 @@ pub fn capture(
 
     let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {
         Some(i) => i,
-        None => {
-            return Err(CaptureError::FailedToCaptureFromX11);
-        }
+        None => return Err(CaptureError::FailedToCaptureFromX11),
     };
 
     let mut image = match image.into_image_buffer() {
         Some(i) => image::DynamicImage::ImageRgba8(i),
-        None => {
-            return Err(CaptureError::UnableToConvertFramebuffer);
-        }
+        None => return Err(CaptureError::UnableToConvertFramebuffer),
     };
 
     // When capturing the root window, attempt to mask the off-screen areas
