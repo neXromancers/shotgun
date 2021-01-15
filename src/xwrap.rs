@@ -279,27 +279,89 @@ impl<'a> Drop for ScreenRectIter<'a> {
     }
 }
 
-pub fn parse_geometry(g: &str) -> util::Rect {
+/// Parse the Area to capture.
+///
+/// The format is `WxH+X+Y` to fully specify the format of `man 3 XParseGeometry`
+/// `[=][<width>{xX}<height>][{+-}<xoffset>{+-}<yoffset>]`
+pub fn parse_geometry(g: &str) -> Result<util::Rect, ParseError> {
     let g = CString::new(g).expect("Failed to convert CString");
-    let mut x = 0;
-    let mut y = 0;
-    let mut w = 0;
-    let mut h = 0;
+    let mut x = i32::MIN;
+    let mut y = i32::MIN;
+    let mut w = u32::MIN;
+    let mut h = u32::MIN;
 
-    unsafe {
+    let ret: i32 = unsafe {
         xlib::XParseGeometry(
             g.as_ptr() as *const raw::c_char,
             &mut x,
             &mut y,
             &mut w,
             &mut h,
-        );
-    }
+        )
+    };
+    const ALL_VALUES: i32 = xlib::YValue | xlib::XValue | xlib::WidthValue | xlib::HeightValue;
+    const WH_VALUES: i32 = xlib::WidthValue | xlib::HeightValue;
 
-    util::Rect {
-        x: x,
-        y: y,
-        w: w as i32,
-        h: h as i32,
+    match ret {
+        ALL_VALUES => Ok(util::Rect {
+            x: x,
+            y: y,
+            w: w as i32,
+            h: h as i32,
+        }),
+        xlib::NoValue => Err(ParseError::NoValue),
+        WH_VALUES => Err(ParseError::MissingXY),
+        v => unreachable!("parse_geometry reached unreachable return {:b}", v),
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParseError {
+    NoValue,
+    MissingXY,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use util::Rect;
+
+    #[test]
+    fn valid_geometry() {
+        let g = "20x30+40+50";
+        let expect = Ok(Rect {
+            w: 20,
+            h: 30,
+            x: 40,
+            y: 50,
+        });
+        let res = parse_geometry(g);
+        assert_eq!(expect, res);
+    }
+    #[test]
+    fn valid_geometry_leading_equal() {
+        let g = "=20x30+40+50";
+        let expect = Ok(Rect {
+            w: 20,
+            h: 30,
+            x: 40,
+            y: 50,
+        });
+        let res = parse_geometry(g);
+        assert_eq!(expect, res);
+    }
+    #[test]
+    fn partial_geometry() {
+        let g = "20x30";
+        let expect = Err(ParseError::MissingXY);
+        let res = parse_geometry(g);
+        assert_eq!(expect, res);
+    }
+    #[test]
+    fn invalid_geometry() {
+        let g = "";
+        let expect = Err(ParseError::NoValue);
+        let res = parse_geometry(g);
+        assert_eq!(expect, res);
     }
 }

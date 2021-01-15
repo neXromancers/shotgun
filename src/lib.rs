@@ -19,17 +19,16 @@ use error::CaptureError;
 ///
 /// If you specify the `window_id`, you must make sure that a window with that ID exists.
 ///
-/// If you specify the `window_geometry` the Area to capture follows this format:
-/// `WxH+X+Y`
+/// If you specify the `window_geometry` it should be parsed by [`xwrap::parse_geometry`](./xwrap/fn.parse_geometry.html)
+///
+/// Submitting an invalid geometry will yield an [`CaptureError::InvalidGeometry`](./error/enum.CaptureError.html)
 pub fn capture(
     window_id: Option<xlib::Window>,
-    window_geometry: Option<String>,
+    window_geometry: Option<util::Rect>,
 ) -> Result<DynamicImage, CaptureError> {
     let display = match Display::open(None) {
         Some(d) => d,
-        None => {
-            return Err(CaptureError::DisplayOpen);
-        }
+        None => return Err(CaptureError::DisplayOpen),
     };
 
     let root = display.get_default_root();
@@ -37,7 +36,7 @@ pub fn capture(
 
     let window_rect = display.get_window_rect(window);
     let sel = match window_geometry {
-        Some(geometry) => match xwrap::parse_geometry(&geometry).intersection(window_rect) {
+        Some(geometry) => match geometry.intersection(window_rect) {
             Some(sel) => util::Rect {
                 // Selection is relative to the root window (whole screen)
                 x: sel.x - window_rect.x,

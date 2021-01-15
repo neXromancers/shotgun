@@ -1,6 +1,6 @@
 use std::cmp;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Rect {
     pub x: i32,
     pub y: i32,
