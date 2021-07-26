@@ -147,6 +147,13 @@ Summary
 
 ## Installation
 
+### Dependencies
+
+When installing with Cargo on Ubuntu you will need to have `libxrandr-dev` installed. To install it with apt run:
+```
+apt install libxrandr-dev
+```
+
 - From source:
   - install a recent Rust toolchain, libx11 and libxrandr (depending on your
     distribution, you may need to install development headers separately)
