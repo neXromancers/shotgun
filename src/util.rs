@@ -8,13 +8,6 @@ pub struct Rect {
     pub h: i32,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Pos {
-    pub x: i32,
-    pub y: i32,
-}
-
-
 impl Rect {
     pub fn intersection(&self, other: Rect) -> Option<Rect> {
         let ix = cmp::max(self.x, other.x);
@@ -32,10 +25,6 @@ impl Rect {
         } else {
             None
         }
-    }
-    
-    pub fn contains(&self, pos: Pos) -> bool {
-        pos.x >= self.x && pos.x < self.x + self.w && pos.y >= self.y && pos.y < self.y + self.h
     }
 }
 

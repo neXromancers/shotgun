@@ -9,8 +9,8 @@ use std::ptr;
 use std::slice;
 
 use image::Pixel;
-use image::Rgba;
 use image::RgbaImage;
+use image::Rgba;
 use libc;
 use x11::xlib;
 use x11::xrandr;
@@ -47,12 +47,16 @@ impl Display {
                 return None;
             }
 
-            Some(Display { handle: d })
+            Some(Display {
+                handle: d,
+            })
         }
     }
 
     pub fn get_default_root(&self) -> xlib::Window {
-        unsafe { xlib::XDefaultRootWindow(self.handle) }
+        unsafe {
+            xlib::XDefaultRootWindow(self.handle)
+        }
     }
 
     pub fn get_window_rect(&self, window: xlib::Window) -> util::Rect {
@@ -65,14 +69,8 @@ impl Display {
             let mut parent = 0;
             let mut children: *mut xlib::Window = ptr::null_mut();
             let mut nchildren = 0;
-            xlib::XQueryTree(
-                self.handle,
-                window,
-                &mut root,
-                &mut parent,
-                &mut children,
-                &mut nchildren,
-            );
+            xlib::XQueryTree(self.handle, window, &mut root, &mut parent,
+                             &mut children, &mut nchildren);
             if !children.is_null() {
                 xlib::XFree(children as *mut raw::c_void);
             }
@@ -82,16 +80,8 @@ impl Display {
 
             if parent != 0 {
                 let mut child = 0;
-                xlib::XTranslateCoordinates(
-                    self.handle,
-                    parent,
-                    root,
-                    attrs.x,
-                    attrs.y,
-                    &mut x,
-                    &mut y,
-                    &mut child,
-                );
+                xlib::XTranslateCoordinates(self.handle, parent, root, attrs.x, attrs.y,
+                                            &mut x, &mut y, &mut child);
             }
 
             util::Rect {
@@ -103,24 +93,13 @@ impl Display {
         }
     }
 
-    pub fn get_image(
-        &self,
-        window: xlib::Window,
-        rect: util::Rect,
-        plane_mask: libc::c_ulong,
-        format: libc::c_int,
-    ) -> Option<Image> {
+    pub fn get_image(&self, window: xlib::Window, rect: util::Rect, plane_mask: libc::c_ulong,
+                     format: libc::c_int) -> Option<Image> {
         unsafe {
-            let image = xlib::XGetImage(
-                self.handle,
-                window,
-                rect.x,
-                rect.y,
-                rect.w as libc::c_uint,
-                rect.h as libc::c_uint,
-                plane_mask,
-                format,
-            );
+            let image = xlib::XGetImage(self.handle, window,
+                                        rect.x, rect.y,
+                                        rect.w as libc::c_uint, rect.h as libc::c_uint,
+                                        plane_mask, format);
 
             if image.is_null() {
                 return None;
@@ -135,7 +114,7 @@ impl Display {
             let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, root);
 
             if xrr_res.is_null() {
-                return None;
+                return None
             }
 
             Some(ScreenRectIter {
@@ -145,31 +124,6 @@ impl Display {
                 i: 0,
             })
         }
-    }
-
-    pub fn get_cursor_position(&self) -> Option<util::Pos> {
-        let mut x = 0;
-        let mut y = 0;
-
-        let (mut win_x, mut win_y, mut mask) = (0, 0, 0);
-        let mut root_win = self.get_default_root();
-
-        unsafe {
-            xlib::XQueryPointer(
-                self.handle,
-                root_win,
-                &mut root_win,
-                &mut root_win,
-                &mut x,
-                &mut y,
-                &mut win_x,
-                &mut win_y,
-                &mut mask,
-            );
-        }
-
-
-        Some(util::Pos { x, y })
     }
 }
 
@@ -183,7 +137,9 @@ impl Drop for Display {
 
 impl Image {
     pub fn from_raw_ximage(ximage: *mut xlib::XImage) -> Image {
-        Image { handle: ximage }
+        Image {
+            handle: ximage,
+        }
     }
 
     pub fn into_image_buffer(&self) -> Option<RgbaImage> {
@@ -192,17 +148,9 @@ impl Image {
             macro_rules! get {
                 ($($a:ident),+) => ($(let $a = (*self.handle).$a;)+);
             }
-            get!(
-                width,
-                height,
-                byte_order,
-                depth,
-                bytes_per_line,
-                bits_per_pixel,
-                red_mask,
-                green_mask,
-                blue_mask
-            );
+            get!(width, height,
+                 byte_order, depth, bytes_per_line, bits_per_pixel,
+                 red_mask, green_mask, blue_mask);
 
             // Pixel size
             let stride = match (depth, bits_per_pixel) {
@@ -215,15 +163,13 @@ impl Image {
             // Only 8 bit, byte-aligned values are supported
             // Truncate masks to the lower 32 bits as that is the maximum pixel size
             macro_rules! channel_offset {
-                ($mask:expr) => {
-                    match (byte_order, $mask & 0xFFFFFFFF) {
-                        (0, 0xFF) | (1, 0xFF000000) => 0,
-                        (0, 0xFF00) | (1, 0xFF0000) => 1,
-                        (0, 0xFF0000) | (1, 0xFF00) => 2,
-                        (0, 0xFF000000) | (1, 0xFF) => 3,
-                        _ => return None,
-                    }
-                };
+                ($mask:expr) => (match (byte_order, $mask & 0xFFFFFFFF) {
+                    (0, 0xFF) | (1, 0xFF000000) => 0,
+                    (0, 0xFF00) | (1, 0xFF0000) => 1,
+                    (0, 0xFF0000) | (1, 0xFF00) => 2,
+                    (0, 0xFF000000) | (1, 0xFF) => 3,
+                    _ => return None,
+                })
             }
             let red_offset = channel_offset!(red_mask);
             let green_offset = channel_offset!(green_mask);
@@ -237,22 +183,15 @@ impl Image {
             // Finally, generate the image object
             Some(RgbaImage::from_fn(width as u32, height as u32, |x, y| {
                 macro_rules! subpixel {
-                    ($channel_offset:ident) => {
-                        data[(y * bytes_per_line as u32 + x * stride as u32 + $channel_offset)
-                            as usize]
-                    };
+                    ($channel_offset:ident) => (data[(y * bytes_per_line as u32
+                                                + x * stride as u32
+                                                + $channel_offset) as usize]);
                 }
-                Rgba::from_channels(
-                    subpixel!(red_offset),
-                    subpixel!(green_offset),
-                    subpixel!(blue_offset),
-                    // Make the alpha channel fully opaque if none is provided
-                    if depth == 24 {
-                        0xFF
-                    } else {
-                        subpixel!(alpha_offset)
-                    },
-                )
+                Rgba::from_channels(subpixel!(red_offset),
+                                    subpixel!(green_offset),
+                                    subpixel!(blue_offset),
+                                    // Make the alpha channel fully opaque if none is provided
+                                    if depth == 24 { 0xFF } else { subpixel!(alpha_offset) })
             }))
         }
     }
@@ -271,7 +210,7 @@ impl<'a> Iterator for ScreenRectIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.i >= self.crtcs.len() {
-            return None;
+            return None
         }
 
         unsafe {
@@ -310,13 +249,7 @@ pub fn parse_geometry(g: ffi::CString) -> util::Rect {
         let mut y = 0;
         let mut w = 0;
         let mut h = 0;
-        xlib::XParseGeometry(
-            g.as_ptr() as *const raw::c_char,
-            &mut x,
-            &mut y,
-            &mut w,
-            &mut h,
-        );
+        xlib::XParseGeometry(g.as_ptr() as *const raw::c_char, &mut x, &mut y, &mut w, &mut h);
 
         util::Rect {
             x: x,
