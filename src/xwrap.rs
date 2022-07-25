@@ -125,6 +125,31 @@ impl Display {
             })
         }
     }
+
+    pub fn get_cursor_position(&self) -> Option<util::Pos> {
+        let mut x = 0;
+        let mut y = 0;
+
+        let (mut win_x, mut win_y, mut mask) = (0, 0, 0);
+        let mut root_win = self.get_default_root();
+
+        unsafe {
+            xlib::XQueryPointer(
+                self.handle,
+                root_win,
+                &mut root_win,
+                &mut root_win,
+                &mut x,
+                &mut y,
+                &mut win_x,
+                &mut win_y,
+                &mut mask,
+            );
+        }
+
+
+        Some(util::Pos { x, y })
+    }
 }
 
 impl Drop for Display {

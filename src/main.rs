@@ -34,6 +34,7 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optopt("f", "format", "Output format", "png/pam");
+    opts.optflag("s", "screen", "Capture the current screen");
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
@@ -95,7 +96,9 @@ fn run() -> i32 {
     };
 
     let window_rect = display.get_window_rect(window);
-    let sel = match matches.opt_str("g") {
+
+    let mut sel: util::Rect;
+    sel = match matches.opt_str("g") {
         Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
                          .intersection(window_rect) {
             Some(sel) => util::Rect {
@@ -117,6 +120,33 @@ fn run() -> i32 {
             h: window_rect.h,
         },
     };
+
+    if matches.opt_present("s") {
+        let cursor = match display.get_cursor_position() {
+            Some(p) => p,
+            None => {
+                eprintln!("Failed to get cursor position");
+                return 1;
+            }
+        };
+
+        let screen_rects = match display.get_screen_rects(display.get_default_root()) {
+            Some(r) => r,
+            None => {
+                eprintln!("Failed to get screen rects");
+                return 1;
+            }
+        };
+
+        // Find the screen that the cursor is on
+        sel = match screen_rects.enumerate().find(|(_, r)| r.contains(cursor)) {
+            Some((_, r)) => r,
+            None => {
+                eprintln!("Failed to find screen containing cursor");
+                return 1;
+            }
+        }
+    }
 
     let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {
         Some(i) => i,
