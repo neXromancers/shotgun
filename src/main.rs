@@ -134,7 +134,6 @@ fn run() -> i32 {
     };
 
     if matches.opt_present("s") {
-        let root = display.get_default_root();
         let cursor = display.get_cursor_position(root);
 
         let screen_rects = match display.get_screen_rects(root) {
