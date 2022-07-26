@@ -129,15 +129,10 @@ fn run() -> i32 {
     };
 
     if matches.opt_present("s") {
-        let cursor = match display.get_cursor_position() {
-            Some(p) => p,
-            None => {
-                eprintln!("Failed to get cursor position");
-                return 1;
-            }
-        };
+        let root = display.get_default_root();
+        let cursor = display.get_cursor_position(root);
 
-        let screen_rects = match display.get_screen_rects(display.get_default_root()) {
+        let screen_rects = match display.get_screen_rects(root) {
             Some(r) => r,
             None => {
                 eprintln!("Failed to get screen rects");
