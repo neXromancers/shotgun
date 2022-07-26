@@ -34,7 +34,7 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optopt("f", "format", "Output format", "png/pam");
-    opts.optflag("s", "screen", "Capture the current screen");
+    opts.optflag("s", "single-screen", "Capture the screen determined by the cursor location");
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
