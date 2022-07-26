@@ -147,7 +147,7 @@ impl Display {
         }
     }
 
-    pub fn get_cursor_position(&self) -> Option<util::Pos> {
+    pub fn get_cursor_position(&self) -> Option<util::Point> {
         let mut x = 0;
         let mut y = 0;
 
@@ -168,7 +168,7 @@ impl Display {
             );
         }
 
-        Some(util::Pos { x, y })
+        Some(util::Point { x, y })
     }
 }
 

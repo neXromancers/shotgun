@@ -9,7 +9,7 @@ pub struct Rect {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct Pos {
+pub struct Point {
     pub x: i32,
     pub y: i32,
 }
@@ -33,7 +33,7 @@ impl Rect {
         }
     }
 
-    pub fn contains(&self, pos: Pos) -> bool {
+    pub fn contains(&self, pos: Point) -> bool {
         pos.x >= self.x && pos.x < self.x + self.w && pos.y >= self.y && pos.y < self.y + self.h
     }
 }
