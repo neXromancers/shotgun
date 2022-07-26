@@ -103,6 +103,11 @@ fn run() -> i32 {
 
     let window_rect = display.get_window_rect(window);
 
+    if matches.opt_present("s") && matches.opt_present("g") {
+        eprintln!("Cannot use -g and -s at the same time");
+        return 1;
+    }
+
     let mut sel: util::Rect;
     sel = match matches.opt_str("g") {
         Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
