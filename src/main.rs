@@ -133,20 +133,20 @@ fn run() -> i32 {
         },
     };
 
+    let screen_rects: Vec<util::Rect> = match display.get_screen_rects(root) {
+        Some(r) => r.map(|r| r.clone()).collect(),
+        None => {
+            eprintln!("Failed to get screen rects");
+            return 1;
+        }
+    };
+
     if matches.opt_present("s") {
         let cursor = display.get_cursor_position(root);
 
-        let screen_rects = match display.get_screen_rects(root) {
-            Some(r) => r,
-            None => {
-                eprintln!("Failed to get screen rects");
-                return 1;
-            }
-        };
-
         // Find the screen that the cursor is on
-        sel = match screen_rects.enumerate().find(|(_, r)| r.contains(cursor)) {
-            Some((_, r)) => r,
+        sel = match screen_rects.iter().find(|r| r.contains(cursor)) {
+            Some(r) => *r,
             None => {
                 eprintln!("Failed to find screen containing cursor");
                 return 1;
@@ -175,41 +175,34 @@ fn run() -> i32 {
 
     // When capturing the root window, attempt to mask the off-screen areas
     if window == root {
-        match display.get_screen_rects(root) {
-            Some(screens) => {
-                let screens: Vec<util::Rect> =
-                    screens.filter_map(|s| s.intersection(sel)).collect();
+        let screens: Vec<util::Rect> = 
+            screen_rects.iter().filter(|s| s.intersection(sel).is_some()).cloned().collect();
 
-                // No point in masking if we're only capturing one screen
-                if screens.len() > 1 {
-                    let mut masked = RgbaImage::from_pixel(
-                        sel.w as u32,
-                        sel.h as u32,
-                        Rgba::from_channels(0, 0, 0, 0),
-                    );
+        // No point in masking if we're only capturing one screen
+        if screens.len() > 1 {
+            let mut masked = RgbaImage::from_pixel(
+                sel.w as u32,
+                sel.h as u32,
+                Rgba::from_channels(0, 0, 0, 0),
+            );
 
-                    for screen in screens {
-                        // Subimage is relative to the captured area
-                        let sub = util::Rect {
-                            x: screen.x - sel.x,
-                            y: screen.y - sel.y,
-                            w: screen.w,
-                            h: screen.h,
-                        };
+            for screen in screens {
+                // Subimage is relative to the captured area
+                let sub = util::Rect {
+                    x: screen.x - sel.x,
+                    y: screen.y - sel.y,
+                    w: screen.w,
+                    h: screen.h,
+                };
 
-                        let mut sub_src =
-                            image.sub_image(sub.x as u32, sub.y as u32, sub.w as u32, sub.h as u32);
-                        masked
-                            .copy_from(&mut sub_src, sub.x as u32, sub.y as u32)
-                            .expect("Failed to copy sub-image");
-                    }
-
-                    image = image::DynamicImage::ImageRgba8(masked);
-                }
+                let mut sub_src =
+                    image.sub_image(sub.x as u32, sub.y as u32, sub.w as u32, sub.h as u32);
+                masked
+                    .copy_from(&mut sub_src, sub.x as u32, sub.y as u32)
+                    .expect("Failed to copy sub-image");
             }
-            None => {
-                eprintln!("Failed to enumerate screens, not masking");
-            }
+
+            image = image::DynamicImage::ImageRgba8(masked);
         }
     }
 
