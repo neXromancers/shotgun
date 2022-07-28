@@ -147,23 +147,21 @@ impl Display {
         }
     }
 
-    pub fn get_cursor_position(&self, mut root_win: xlib::Window) -> util::Point {
+    pub fn get_cursor_position(&self, window: xlib::Window) -> util::Point {
         let mut x = 0;
         let mut y = 0;
-
-        let (mut win_x, mut win_y, mut mask) = (0, 0, 0);
 
         unsafe {
             xlib::XQueryPointer(
                 self.handle,
-                root_win,
-                &mut root_win,
-                &mut root_win,
+                window,
+                &mut 0,
+                &mut 0,
                 &mut x,
                 &mut y,
-                &mut win_x,
-                &mut win_y,
-                &mut mask,
+                &mut 0,
+                &mut 0,
+                &mut 0,
             );
         }
 
