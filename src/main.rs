@@ -142,7 +142,13 @@ fn run() -> i32 {
     };
 
     if matches.opt_present("s") {
-        let cursor = display.get_cursor_position(root);
+        let cursor = match display.get_cursor_position(root) {
+            Some(c) => c,
+            None => {
+                eprintln!("Failed to get cursor position");
+                return 1;
+            }
+        };
 
         // Find the screen that the cursor is on
         sel = match screen_rects.iter().find(|r| r.contains(cursor)) {

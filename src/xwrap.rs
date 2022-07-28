@@ -147,12 +147,12 @@ impl Display {
         }
     }
 
-    pub fn get_cursor_position(&self, window: xlib::Window) -> util::Point {
+    pub fn get_cursor_position(&self, window: xlib::Window) -> Option<util::Point> {
         let mut x = 0;
         let mut y = 0;
 
         unsafe {
-            xlib::XQueryPointer(
+            if xlib::XQueryPointer(
                 self.handle,
                 window,
                 &mut 0,
@@ -162,10 +162,12 @@ impl Display {
                 &mut 0,
                 &mut 0,
                 &mut 0,
-            );
+            ) == 0 {
+                return None;
+            }
         }
 
-        util::Point { x, y }
+        Some(util::Point { x, y })
     }
 }
 
