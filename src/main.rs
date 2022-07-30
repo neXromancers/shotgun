@@ -103,9 +103,15 @@ fn run() -> i32 {
 
     let window_rect = display.get_window_rect(window);
 
-    if matches.opt_present("s") && matches.opt_present("g") {
-        eprintln!("Cannot use -g and -s at the same time");
-        return 1;
+    if matches.opt_present("s") {
+        if matches.opt_present("g") {
+            eprintln!("Cannot use -g and -s at the same time");
+            return 1;
+        }
+        if matches.opt_present("i") {
+            eprintln!("Cannot use -i and -s at the same time");
+            return 1;
+        }
     }
 
     let mut sel: util::Rect;
