@@ -34,7 +34,11 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optopt("f", "format", "Output format", "png/pam");
-    opts.optflag("s", "single-screen", "Capture the screen determined by the cursor location");
+    opts.optflag(
+        "s",
+        "single-screen",
+        "Capture the screen determined by the cursor location",
+    );
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
@@ -114,8 +118,7 @@ fn run() -> i32 {
         }
     }
 
-    let mut sel: util::Rect;
-    sel = match matches.opt_str("g") {
+    let mut sel = match matches.opt_str("g") {
         Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
             .intersection(window_rect)
         {
@@ -187,16 +190,16 @@ fn run() -> i32 {
 
     // When capturing the root window, attempt to mask the off-screen areas
     if window == root {
-        let screens: Vec<util::Rect> = 
-            screen_rects.iter().filter(|s| s.intersection(sel).is_some()).cloned().collect();
+        let screens: Vec<util::Rect> = screen_rects
+            .iter()
+            .filter(|s| s.intersection(sel).is_some())
+            .cloned()
+            .collect();
 
         // No point in masking if we're only capturing one screen
         if screens.len() > 1 {
-            let mut masked = RgbaImage::from_pixel(
-                sel.w as u32,
-                sel.h as u32,
-                Rgba::from_channels(0, 0, 0, 0),
-            );
+            let mut masked =
+                RgbaImage::from_pixel(sel.w as u32, sel.h as u32, Rgba::from_channels(0, 0, 0, 0));
 
             for screen in screens {
                 // Subimage is relative to the captured area

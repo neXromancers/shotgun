@@ -162,7 +162,8 @@ impl Display {
                 &mut 0,
                 &mut 0,
                 &mut 0,
-            ) == 0 {
+            ) == 0
+            {
                 return None;
             }
         }
