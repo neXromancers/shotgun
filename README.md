@@ -20,6 +20,7 @@ Options:
                         Area to capture
     -f, --format png/pam
                         Output format
+    -s, --screen        Capture the current screen
     -h, --help          Print help and exit
     -v, --version       Print version and exit
 ```

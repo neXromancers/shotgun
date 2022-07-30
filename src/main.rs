@@ -13,8 +13,8 @@ use std::time;
 use getopts::Options;
 use image::GenericImage;
 use image::Pixel;
-use image::RgbaImage;
 use image::Rgba;
+use image::RgbaImage;
 use x11::xlib;
 
 mod util;
@@ -34,6 +34,11 @@ fn run() -> i32 {
     opts.optopt("i", "id", "Window to capture", "ID");
     opts.optopt("g", "geometry", "Area to capture", "WxH+X+Y");
     opts.optopt("f", "format", "Output format", "png/pam");
+    opts.optflag(
+        "s",
+        "single-screen",
+        "Capture the screen determined by the cursor location",
+    );
     opts.optflag("h", "help", "Print help and exit");
     opts.optflag("v", "version", "Print version and exit");
 
@@ -59,7 +64,10 @@ fn run() -> i32 {
     }
 
     if matches.opt_present("v") {
-        eprintln!("shotgun {}", option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")));
+        eprintln!(
+            "shotgun {}",
+            option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
+        );
         return 0;
     }
 
@@ -79,12 +87,15 @@ fn run() -> i32 {
                 eprintln!("Window ID is not a valid integer");
                 eprintln!("Accepted values are decimal, hex (0x*), octal (0o*) and binary (0b*)");
                 return 1;
-            },
+            }
         },
         None => root,
     };
 
-    let output_ext = matches.opt_str("f").unwrap_or("png".to_string()).to_lowercase();
+    let output_ext = matches
+        .opt_str("f")
+        .unwrap_or("png".to_string())
+        .to_lowercase();
     let output_format = match output_ext.as_ref() {
         "png" => image::ImageOutputFormat::Png,
         "pam" => image::ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap),
@@ -95,9 +106,22 @@ fn run() -> i32 {
     };
 
     let window_rect = display.get_window_rect(window);
-    let sel = match matches.opt_str("g") {
+
+    if matches.opt_present("s") {
+        if matches.opt_present("g") {
+            eprintln!("Cannot use -g and -s at the same time");
+            return 1;
+        }
+        if matches.opt_present("i") {
+            eprintln!("Cannot use -i and -s at the same time");
+            return 1;
+        }
+    }
+
+    let mut sel = match matches.opt_str("g") {
         Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
-                         .intersection(window_rect) {
+            .intersection(window_rect)
+        {
             Some(sel) => util::Rect {
                 // Selection is relative to the root window (whole screen)
                 x: sel.x - window_rect.x,
@@ -108,7 +132,7 @@ fn run() -> i32 {
             None => {
                 eprintln!("Invalid geometry");
                 return 1;
-            },
+            }
         },
         None => util::Rect {
             x: 0,
@@ -118,56 +142,82 @@ fn run() -> i32 {
         },
     };
 
+    let screen_rects: Vec<util::Rect> = match display.get_screen_rects(root) {
+        Some(r) => r.collect(),
+        None => {
+            eprintln!("Failed to get screen rects");
+            return 1;
+        }
+    };
+
+    if matches.opt_present("s") {
+        let cursor = match display.get_cursor_position(root) {
+            Some(c) => c,
+            None => {
+                eprintln!("Failed to get cursor position");
+                return 1;
+            }
+        };
+
+        // Find the screen that the cursor is on
+        sel = match screen_rects.iter().find(|r| r.contains(cursor)) {
+            Some(r) => *r,
+            None => {
+                eprintln!("Failed to find screen containing cursor");
+                return 1;
+            }
+        }
+    }
+
     let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {
         Some(i) => i,
         None => {
             eprintln!("Failed to get image from X");
             return 1;
-        },
+        }
     };
 
     let mut image = match image.into_image_buffer() {
         Some(i) => image::DynamicImage::ImageRgba8(i),
         None => {
-            eprintln!("Failed to convert captured framebuffer, only 24/32 \
-                      bit (A)RGB8 is supported");
+            eprintln!(
+                "Failed to convert captured framebuffer, only 24/32 \
+                      bit (A)RGB8 is supported"
+            );
             return 1;
         }
     };
 
     // When capturing the root window, attempt to mask the off-screen areas
     if window == root {
-        match display.get_screen_rects(root) {
-            Some(screens) => {
-                let screens: Vec<util::Rect> =
-                    screens.filter_map(|s| s.intersection(sel)).collect();
+        let screens: Vec<util::Rect> = screen_rects
+            .iter()
+            .filter(|s| s.intersection(sel).is_some())
+            .cloned()
+            .collect();
 
-                // No point in masking if we're only capturing one screen
-                if screens.len() > 1 {
-                    let mut masked = RgbaImage::from_pixel(sel.w as u32, sel.h as u32,
-                                                           Rgba::from_channels(0, 0, 0, 0));
+        // No point in masking if we're only capturing one screen
+        if screens.len() > 1 {
+            let mut masked =
+                RgbaImage::from_pixel(sel.w as u32, sel.h as u32, Rgba::from_channels(0, 0, 0, 0));
 
-                    for screen in screens {
-                        // Subimage is relative to the captured area
-                        let sub = util::Rect {
-                            x: screen.x - sel.x,
-                            y: screen.y - sel.y,
-                            w: screen.w,
-                            h: screen.h,
-                        };
+            for screen in screens {
+                // Subimage is relative to the captured area
+                let sub = util::Rect {
+                    x: screen.x - sel.x,
+                    y: screen.y - sel.y,
+                    w: screen.w,
+                    h: screen.h,
+                };
 
-                        let mut sub_src = image.sub_image(sub.x as u32, sub.y as u32,
-                                                          sub.w as u32, sub.h as u32);
-                        masked.copy_from(&mut sub_src, sub.x as u32, sub.y as u32)
-                            .expect("Failed to copy sub-image");
-                    }
+                let mut sub_src =
+                    image.sub_image(sub.x as u32, sub.y as u32, sub.w as u32, sub.h as u32);
+                masked
+                    .copy_from(&mut sub_src, sub.x as u32, sub.y as u32)
+                    .expect("Failed to copy sub-image");
+            }
 
-                    image = image::DynamicImage::ImageRgba8(masked);
-                }
-            },
-            None => {
-                eprintln!("Failed to enumerate screens, not masking");
-            },
+            image = image::DynamicImage::ImageRgba8(masked);
         }
     }
 
@@ -183,18 +233,22 @@ fn run() -> i32 {
         None => {
             eprintln!("No output specified, defaulting to {}", ts_path);
             ts_path.as_str()
-        },
+        }
     };
 
     if path == "-" {
-        image.write_to(&mut io::stdout(), output_format).expect("Writing to stdout failed");
+        image
+            .write_to(&mut io::stdout(), output_format)
+            .expect("Writing to stdout failed");
     } else {
         match File::create(&Path::new(&path)) {
-            Ok(mut f) => image.write_to(&mut f, output_format).expect("Writing to file failed"),
+            Ok(mut f) => image
+                .write_to(&mut f, output_format)
+                .expect("Writing to file failed"),
             Err(e) => {
                 eprintln!("Failed to create {}: {}", path, e);
-                return 1
-            },
+                return 1;
+            }
         }
     }
 
