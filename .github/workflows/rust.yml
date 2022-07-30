@@ -19,7 +19,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup environment
-      run: echo "RUSTFLAGS=-D warnings" >> $GITHUB_ENV
+      run: |
+        sudo apt-get install libx11-dev libxrandr-dev
+        echo "RUSTFLAGS=-D warnings" >> $GITHUB_ENV
     - name: rustfmt
       run: cargo fmt -- --check
     - name: Build
