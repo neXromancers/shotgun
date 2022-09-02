@@ -192,8 +192,7 @@ fn run() -> i32 {
     if window == root {
         let screens: Vec<util::Rect> = screen_rects
             .iter()
-            .filter(|s| s.intersection(sel).is_some())
-            .cloned()
+            .filter_map(|s| s.intersection(sel))
             .collect();
 
         // No point in masking if we're only capturing one screen
