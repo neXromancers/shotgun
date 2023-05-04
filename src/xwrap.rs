@@ -42,10 +42,10 @@ impl Display {
             let d = xlib::XOpenDisplay(name);
 
             if d.is_null() {
-                return None;
+                None
+            } else {
+                Some(Display { handle: d })
             }
-
-            Some(Display { handle: d })
         }
     }
 
@@ -116,10 +116,10 @@ impl Display {
             );
 
             if image.is_null() {
-                return None;
+                None
+            } else {
+                Some(Image::from_raw_ximage(image))
             }
-
-            Some(Image::from_raw_ximage(image))
         }
     }
 
@@ -128,15 +128,15 @@ impl Display {
             let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, root);
 
             if xrr_res.is_null() {
-                return None;
+                None
+            } else {
+                Some(ScreenRectIter {
+                    dpy: &self,
+                    res: xrr_res,
+                    crtcs: slice::from_raw_parts((*xrr_res).crtcs, (*xrr_res).ncrtc as usize),
+                    i: 0,
+                })
             }
-
-            Some(ScreenRectIter {
-                dpy: &self,
-                res: xrr_res,
-                crtcs: slice::from_raw_parts((*xrr_res).crtcs, (*xrr_res).ncrtc as usize),
-                i: 0,
-            })
         }
     }
 
@@ -157,11 +157,11 @@ impl Display {
                 &mut 0,
             ) == 0
             {
-                return None;
+                None
+            } else {
+                Some(util::Point { x, y })
             }
         }
-
-        Some(util::Point { x, y })
     }
 }
 
