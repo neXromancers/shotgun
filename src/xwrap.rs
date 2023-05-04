@@ -115,11 +115,7 @@ impl Display {
                 xlib::ZPixmap,
             );
 
-            if image.is_null() {
-                None
-            } else {
-                Some(Image::from_raw_ximage(image))
-            }
+            Image::from_raw_ximage(image)
         }
     }
 
@@ -174,8 +170,12 @@ impl Drop for Display {
 }
 
 impl Image {
-    pub fn from_raw_ximage(ximage: *mut xlib::XImage) -> Image {
-        Image { handle: ximage }
+    fn from_raw_ximage(ximage: *mut xlib::XImage) -> Option<Image> {
+        if ximage.is_null() {
+            None
+        } else {
+            Some(Image { handle: ximage })
+        }
     }
 
     pub fn into_image_buffer(&self) -> Option<RgbaImage> {
