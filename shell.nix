@@ -9,6 +9,7 @@ in pkgs.mkShell {
     p.cargo
     p.rust-analyzer
     p.rustc
+    p.rustfmt
 
     p.xorg.libX11
     p.xorg.libXrandr
