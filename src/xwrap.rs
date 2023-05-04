@@ -17,8 +17,6 @@ use x11::xrandr;
 
 use crate::util;
 
-pub const ALL_PLANES: libc::c_ulong = !0;
-
 pub struct Display {
     handle: *mut xlib::Display,
 }
@@ -103,14 +101,9 @@ impl Display {
         }
     }
 
-    pub fn get_image(
-        &self,
-        window: xlib::Window,
-        rect: util::Rect,
-        plane_mask: libc::c_ulong,
-        format: libc::c_int,
-    ) -> Option<Image> {
+    pub fn get_image(&self, window: xlib::Window, rect: util::Rect) -> Option<Image> {
         unsafe {
+            let all_planes = !0;
             let image = xlib::XGetImage(
                 self.handle,
                 window,
@@ -118,8 +111,8 @@ impl Display {
                 rect.y,
                 rect.w as libc::c_uint,
                 rect.h as libc::c_uint,
-                plane_mask,
-                format,
+                all_planes,
+                xlib::ZPixmap,
             );
 
             if image.is_null() {

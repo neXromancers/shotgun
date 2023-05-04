@@ -169,7 +169,7 @@ fn run() -> i32 {
         }
     }
 
-    let image = match display.get_image(window, sel, xwrap::ALL_PLANES, xlib::ZPixmap) {
+    let image = match display.get_image(window, sel) {
         Some(i) => i,
         None => {
             eprintln!("Failed to get image from X");
