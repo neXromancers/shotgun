@@ -15,9 +15,9 @@ num-traits = "0.2"
 
 [dependencies.image]
 default-features = false
-version = "0.23"
+version = "0.24.6"
 features = ["png", "pnm"]
 
 [dependencies.x11]
-version = "2.18"
+version = "2.21.0"
 features = ["xlib", "xrandr"]

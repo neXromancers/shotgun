@@ -5,14 +5,14 @@
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
-use std::io;
+use std::io::{self, Write};
 use std::path::Path;
 use std::process;
 use std::time;
 
 use getopts::Options;
 use image::GenericImage;
-use image::Pixel;
+use image::GenericImageView;
 use image::Rgba;
 use image::RgbaImage;
 use x11::xlib;
@@ -98,7 +98,7 @@ fn run() -> i32 {
         .to_lowercase();
     let output_format = match output_ext.as_ref() {
         "png" => image::ImageOutputFormat::Png,
-        "pam" => image::ImageOutputFormat::Pnm(image::pnm::PNMSubtype::ArbitraryMap),
+        "pam" => image::ImageOutputFormat::Pnm(image::codecs::pnm::PnmSubtype::ArbitraryMap),
         _ => {
             eprintln!("Invalid image format specified");
             return 1;
@@ -178,7 +178,7 @@ fn run() -> i32 {
     };
 
     let mut image = match image.into_image_buffer() {
-        Some(i) => image::DynamicImage::ImageRgba8(i),
+        Some(i) => i,
         None => {
             eprintln!(
                 "Failed to convert captured framebuffer, \
@@ -198,8 +198,7 @@ fn run() -> i32 {
 
         // No point in masking if we're only capturing one screen
         if screens.len() > 1 {
-            let mut masked =
-                RgbaImage::from_pixel(sel.w as u32, sel.h as u32, Rgba::from_channels(0, 0, 0, 0));
+            let mut masked = RgbaImage::from_pixel(sel.w as u32, sel.h as u32, Rgba([0, 0, 0, 0]));
 
             for screen in screens {
                 // Subimage is relative to the captured area
@@ -210,14 +209,13 @@ fn run() -> i32 {
                     h: screen.h,
                 };
 
-                let mut sub_src =
-                    image.sub_image(sub.x as u32, sub.y as u32, sub.w as u32, sub.h as u32);
+                let view = image.view(sub.x as u32, sub.y as u32, sub.w as u32, sub.h as u32);
                 masked
-                    .copy_from(&mut sub_src, sub.x as u32, sub.y as u32)
+                    .copy_from(&*view, sub.x as u32, sub.y as u32)
                     .expect("Failed to copy sub-image");
             }
 
-            image = image::DynamicImage::ImageRgba8(masked);
+            image = masked;
         }
     }
 
@@ -237,8 +235,12 @@ fn run() -> i32 {
     };
 
     if path == "-" {
+        let mut buf = Vec::new();
         image
-            .write_to(&mut io::stdout(), output_format)
+            .write_to(&mut io::Cursor::new(&mut buf), output_format)
+            .expect("Encoding failed");
+        io::stdout()
+            .write_all(buf.as_slice())
             .expect("Writing to stdout failed");
     } else {
         match File::create(&Path::new(&path)) {

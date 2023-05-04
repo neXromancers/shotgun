@@ -8,7 +8,6 @@ use std::os::raw;
 use std::ptr;
 use std::slice;
 
-use image::Pixel;
 use image::Rgba;
 use image::RgbaImage;
 use libc;
@@ -220,7 +219,7 @@ impl Image {
             img.height as u32,
             |x, y| {
                 let offset = (y * img.bytes_per_line as u32 + x * bytes_per_pixel) as usize;
-                Rgba::from_channels(
+                Rgba([
                     data[offset + red_offset],
                     data[offset + green_offset],
                     data[offset + blue_offset],
@@ -230,7 +229,7 @@ impl Image {
                     } else {
                         data[offset + alpha_offset]
                     },
-                )
+                ])
             },
         ))
     }
@@ -262,12 +261,12 @@ impl Image {
                 let red = (pixel >> 11) & 0x1F;
                 let green = (pixel >> 5) & 0x3F;
                 let blue = pixel & 0x1F;
-                Rgba::from_channels(
+                Rgba([
                     (red << 3 | red >> 2) as u8,
                     (green << 2 | green >> 4) as u8,
                     (blue << 3 | blue >> 2) as u8,
                     0xFF,
-                )
+                ])
             },
         ))
     }
