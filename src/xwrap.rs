@@ -179,78 +179,60 @@ impl Image {
     }
 
     pub fn into_image_buffer(&self) -> Option<RgbaImage> {
-        unsafe {
-            // Extract values from the XImage into our own scope
-            macro_rules! get {
-                ($($a:ident),+) => ($(let $a = (*self.handle).$a;)+);
-            }
-            get!(
-                width,
-                height,
-                byte_order,
-                depth,
-                bytes_per_line,
-                bits_per_pixel,
-                red_mask,
-                green_mask,
-                blue_mask
-            );
+        let img = unsafe { &*self.handle };
 
-            if (red_mask, green_mask, blue_mask) == (0xF800, 0x07E0, 0x001F) {
-                return self.into_image_buffer_rgb565();
-            }
+        if (img.red_mask, img.green_mask, img.blue_mask) == (0xF800, 0x07E0, 0x001F) {
+            return self.into_image_buffer_rgb565();
+        }
 
-            // Pixel size
-            let stride = match (depth, bits_per_pixel) {
-                (24, 24) => 3,
-                (24, 32) | (32, 32) => 4,
-                _ => return None,
-            };
+        let bytes_per_pixel = match (img.depth, img.bits_per_pixel) {
+            (24, 24) => 3,
+            (24, 32) | (32, 32) => 4,
+            _ => return None,
+        };
 
-            // Compute subpixel offsets into each pixel according the the bitmasks X gives us
-            // Only 8 bit, byte-aligned values are supported
-            // Truncate masks to the lower 32 bits as that is the maximum pixel size
-            macro_rules! channel_offset {
-                ($mask:expr) => {
-                    match (byte_order, $mask & 0xFFFFFFFF) {
-                        (0, 0xFF) | (1, 0xFF000000) => 0,
-                        (0, 0xFF00) | (1, 0xFF0000) => 1,
-                        (0, 0xFF0000) | (1, 0xFF00) => 2,
-                        (0, 0xFF000000) | (1, 0xFF) => 3,
-                        _ => return None,
-                    }
-                };
-            }
-            let red_offset = channel_offset!(red_mask);
-            let green_offset = channel_offset!(green_mask);
-            let blue_offset = channel_offset!(blue_mask);
-            let alpha_offset = channel_offset!(!(red_mask | green_mask | blue_mask));
-
-            // Wrap the pixel buffer into a slice
-            let size = (bytes_per_line * height) as usize;
-            let data = slice::from_raw_parts((*self.handle).data as *const u8, size);
-
-            // Finally, generate the image object
-            Some(RgbaImage::from_fn(width as u32, height as u32, |x, y| {
-                macro_rules! subpixel {
-                    ($channel_offset:ident) => {
-                        data[(y * bytes_per_line as u32 + x * stride as u32 + $channel_offset)
-                            as usize]
-                    };
+        // Compute subpixel offsets into each pixel according the the bitmasks X gives us
+        // Only 8 bit, byte-aligned values are supported
+        // Truncate masks to the lower 32 bits as that is the maximum pixel size
+        macro_rules! channel_offset {
+            ($mask:expr) => {
+                match (img.byte_order, $mask & 0xFFFFFFFF) {
+                    (0, 0xFF) | (1, 0xFF000000) => 0,
+                    (0, 0xFF00) | (1, 0xFF0000) => 1,
+                    (0, 0xFF0000) | (1, 0xFF00) => 2,
+                    (0, 0xFF000000) | (1, 0xFF) => 3,
+                    _ => return None,
                 }
+            };
+        }
+        let red_offset = channel_offset!(img.red_mask);
+        let green_offset = channel_offset!(img.green_mask);
+        let blue_offset = channel_offset!(img.blue_mask);
+        let alpha_offset = channel_offset!(!(img.red_mask | img.green_mask | img.blue_mask));
+
+        // Wrap the pixel buffer into a slice
+        let size = (img.bytes_per_line * img.height) as usize;
+        let data = unsafe { slice::from_raw_parts(img.data as *const u8, size) };
+
+        // Finally, generate the image object
+        Some(RgbaImage::from_fn(
+            img.width as u32,
+            img.height as u32,
+            |x, y| {
+                let offset = (y * img.bytes_per_line as u32 + x * bytes_per_pixel) as usize;
                 Rgba::from_channels(
-                    subpixel!(red_offset),
-                    subpixel!(green_offset),
-                    subpixel!(blue_offset),
+                    data[offset + red_offset],
+                    data[offset + green_offset],
+                    data[offset + blue_offset],
                     // Make the alpha channel fully opaque if none is provided
-                    if depth == 24 {
+                    if img.depth == 24 {
                         0xFF
                     } else {
-                        subpixel!(alpha_offset)
+                        data[offset + alpha_offset]
                     },
                 )
-            }))
-        }
+            },
+        ))
     }
 
     fn into_image_buffer_rgb565(&self) -> Option<RgbaImage> {
