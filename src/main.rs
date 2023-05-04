@@ -181,8 +181,9 @@ fn run() -> i32 {
         Some(i) => image::DynamicImage::ImageRgba8(i),
         None => {
             eprintln!(
-                "Failed to convert captured framebuffer, only 24/32 \
-                      bit (A)RGB8 is supported"
+                "Failed to convert captured framebuffer, \
+                    only RGB565 and 8bpc formats are supported.\n\
+                    See https://github.com/neXromancers/shotgun/issues/35."
             );
             return 1;
         }

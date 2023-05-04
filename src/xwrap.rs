@@ -196,6 +196,10 @@ impl Image {
                 blue_mask
             );
 
+            if (red_mask, green_mask, blue_mask) == (0xF800, 0x07E0, 0x001F) {
+                return self.into_image_buffer_rgb565();
+            }
+
             // Pixel size
             let stride = match (depth, bits_per_pixel) {
                 (24, 24) => 3,
@@ -247,6 +251,43 @@ impl Image {
                 )
             }))
         }
+    }
+
+    fn into_image_buffer_rgb565(&self) -> Option<RgbaImage> {
+        let img = unsafe { &*self.handle };
+
+        if img.depth != 16 || img.bits_per_pixel != 16 {
+            return None;
+        }
+        let bytes_per_pixel = 2;
+
+        // Wrap the pixel buffer into a slice
+        let size = (img.bytes_per_line * img.height) as usize;
+        let data = unsafe { slice::from_raw_parts(img.data as *const u8, size) };
+
+        // Finally, generate the image object
+        Some(RgbaImage::from_fn(
+            img.width as u32,
+            img.height as u32,
+            |x, y| {
+                let offset = (y * img.bytes_per_line as u32 + x * bytes_per_pixel) as usize;
+                let pixel_slice = [data[offset], data[offset + 1]];
+                let pixel = if img.byte_order == 0 {
+                    u16::from_le_bytes(pixel_slice)
+                } else {
+                    u16::from_be_bytes(pixel_slice)
+                };
+                let red = (pixel >> 11) & 0x1F;
+                let green = (pixel >> 5) & 0x3F;
+                let blue = pixel & 0x1F;
+                Rgba::from_channels(
+                    (red << 3 | red >> 2) as u8,
+                    (green << 2 | green >> 4) as u8,
+                    (blue << 3 | blue >> 2) as u8,
+                    0xFF,
+                )
+            },
+        ))
     }
 }
 
