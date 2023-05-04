@@ -2,3 +2,5 @@
 **/*.rs.bk
 
 *.png
+
+.direnv
