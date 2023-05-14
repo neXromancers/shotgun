@@ -5,14 +5,16 @@
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io;
 use std::path::Path;
 use std::process;
 use std::time;
 
 use getopts::Options;
+use image::codecs;
 use image::GenericImage;
 use image::GenericImageView;
+use image::ImageOutputFormat;
 use image::Rgba;
 use image::RgbaImage;
 use x11::xlib;
@@ -96,8 +98,8 @@ fn run() -> i32 {
         .unwrap_or_else(|| "png".to_string())
         .to_lowercase();
     let output_format = match output_ext.as_ref() {
-        "png" => image::ImageOutputFormat::Png,
-        "pam" => image::ImageOutputFormat::Pnm(image::codecs::pnm::PnmSubtype::ArbitraryMap),
+        "png" => ImageOutputFormat::Png,
+        "pam" => ImageOutputFormat::Pnm(codecs::pnm::PnmSubtype::ArbitraryMap),
         _ => {
             eprintln!("Invalid image format specified");
             return 1;
@@ -233,25 +235,30 @@ fn run() -> i32 {
         }
     };
 
-    if path == "-" {
-        let mut buf = Vec::new();
-        image
-            .write_to(&mut io::Cursor::new(&mut buf), output_format)
-            .expect("Encoding failed");
-        io::stdout()
-            .write_all(buf.as_slice())
-            .expect("Writing to stdout failed");
+    let writer: Box<dyn io::Write> = if path == "-" {
+        Box::new(io::stdout())
     } else {
         match File::create(Path::new(&path)) {
-            Ok(mut f) => image
-                .write_to(&mut f, output_format)
-                .expect("Writing to file failed"),
+            Ok(f) => Box::new(f),
             Err(e) => {
                 eprintln!("Failed to create {path}: {e}");
                 return 1;
             }
         }
+    };
+
+    match output_format {
+        ImageOutputFormat::Png => {
+            let encoder = codecs::png::PngEncoder::new(writer);
+            util::write_image_buffer_with_encoder(&image, encoder)
+        }
+        ImageOutputFormat::Pnm(subtype) => {
+            let encoder = codecs::pnm::PnmEncoder::new(writer).with_subtype(subtype);
+            util::write_image_buffer_with_encoder(&image, encoder)
+        }
+        _ => unreachable!(),
     }
+    .expect("Failed to write output");
 
     0
 }
