@@ -166,7 +166,6 @@ version = "2.4.0"
 dependencies = [
  "getopts",
  "image",
- "libc",
  "num-traits",
  "x11",
 ]

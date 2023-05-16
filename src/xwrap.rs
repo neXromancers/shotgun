@@ -10,7 +10,6 @@ use std::slice;
 
 use image::Rgba;
 use image::RgbaImage;
-use libc;
 use x11::xlib;
 use x11::xrandr;
 
@@ -108,8 +107,8 @@ impl Display {
                 window,
                 rect.x,
                 rect.y,
-                rect.w as libc::c_uint,
-                rect.h as libc::c_uint,
+                rect.w as std::ffi::c_uint,
+                rect.h as std::ffi::c_uint,
                 all_planes,
                 xlib::ZPixmap,
             );
