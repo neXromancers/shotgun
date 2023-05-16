@@ -11,12 +11,18 @@ use std::slice;
 use image::Rgba;
 use image::RgbaImage;
 use x11::xlib;
+use x11::xlib_xcb;
 use x11::xrandr;
+use x11rb::connection::Connection;
+use x11rb::protocol::xproto;
+use x11rb::xcb_ffi::XCBConnection;
 
 use crate::util;
 
 pub struct Display {
     handle: *mut xlib::Display,
+    conn: XCBConnection,
+    screen: usize,
 }
 
 pub struct Image {
@@ -39,22 +45,36 @@ impl Display {
             };
             let d = xlib::XOpenDisplay(name);
 
+            // TODO: change to RustConnection once the port is complete
+            let xcb_conn = xlib_xcb::XGetXCBConnection(d);
+            let conn = XCBConnection::from_raw_xcb_connection(xcb_conn, false).ok()?;
+
+            let screen = xlib::XDefaultScreen(d) as _;
+
             if d.is_null() {
                 None
             } else {
-                Some(Display { handle: d })
+                Some(Display {
+                    handle: d,
+                    conn,
+                    screen,
+                })
             }
         }
     }
 
-    pub fn root(&self) -> xlib::Window {
-        unsafe { xlib::XDefaultRootWindow(self.handle) }
+    fn screen(&self) -> &xproto::Screen {
+        &self.conn.setup().roots[self.screen]
     }
 
-    pub fn get_window_rect(&self, window: xlib::Window) -> util::Rect {
+    pub fn root(&self) -> xproto::Window {
+        self.screen().root
+    }
+
+    pub fn get_window_rect(&self, window: xproto::Window) -> util::Rect {
         unsafe {
             let mut attrs = mem::MaybeUninit::uninit();
-            xlib::XGetWindowAttributes(self.handle, window, attrs.as_mut_ptr());
+            xlib::XGetWindowAttributes(self.handle, window as _, attrs.as_mut_ptr());
             let attrs = attrs.assume_init();
 
             let mut root = 0;
@@ -63,7 +83,7 @@ impl Display {
             let mut nchildren = 0;
             xlib::XQueryTree(
                 self.handle,
-                window,
+                window as _,
                 &mut root,
                 &mut parent,
                 &mut children,
@@ -99,12 +119,12 @@ impl Display {
         }
     }
 
-    pub fn get_image(&self, window: xlib::Window, rect: util::Rect) -> Option<Image> {
+    pub fn get_image(&self, window: xproto::Window, rect: util::Rect) -> Option<Image> {
         unsafe {
             let all_planes = !0;
             let image = xlib::XGetImage(
                 self.handle,
-                window,
+                window as _,
                 rect.x,
                 rect.y,
                 rect.w as std::ffi::c_uint,
@@ -119,7 +139,7 @@ impl Display {
 
     pub fn get_screen_rects(&self) -> Option<ScreenRectIter<'_>> {
         unsafe {
-            let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, self.root());
+            let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, self.root() as _);
 
             if xrr_res.is_null() {
                 None
@@ -141,7 +161,7 @@ impl Display {
         unsafe {
             if xlib::XQueryPointer(
                 self.handle,
-                self.root(),
+                self.root() as _,
                 &mut 0,
                 &mut 0,
                 &mut x,

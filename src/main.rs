@@ -17,7 +17,7 @@ use image::GenericImageView;
 use image::ImageOutputFormat;
 use image::Rgba;
 use image::RgbaImage;
-use x11::xlib;
+use x11rb::protocol::xproto;
 
 mod util;
 mod xwrap;
@@ -82,7 +82,7 @@ fn run() -> i32 {
     let root = display.root();
 
     let window = match matches.opt_str("i") {
-        Some(s) => match util::parse_int::<xlib::Window>(&s) {
+        Some(s) => match util::parse_int::<xproto::Window>(&s) {
             Ok(r) => r,
             Err(_) => {
                 eprintln!("Window ID is not a valid integer");
