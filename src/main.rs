@@ -22,8 +22,9 @@ mod xwrap;
 use crate::xwrap::Display;
 
 fn usage(progname: &str, opts: getopts::Options) {
-    let brief = format!("Usage: {} [options] [file]", progname);
-    eprint!("{}", opts.usage(&brief));
+    let brief = format!("Usage: {progname} [options] [file]");
+    let usage = opts.usage(&brief);
+    eprint!("{usage}");
 }
 
 fn run() -> i32 {
@@ -45,7 +46,7 @@ fn run() -> i32 {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            eprintln!("{}", f.to_string());
+            eprintln!("{f}");
             usage(&progname, opts);
             return 1;
         }
@@ -64,10 +65,8 @@ fn run() -> i32 {
     }
 
     if matches.opt_present("v") {
-        eprintln!(
-            "shotgun {}",
-            option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
-        );
+        let version = option_env!("GIT_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"));
+        eprintln!("shotgun {version}");
         return 0;
     }
 
@@ -224,12 +223,12 @@ fn run() -> i32 {
             Ok(n) => n.as_secs(),
             Err(_) => 0,
         };
-        format!("{}.{}", now, output_ext)
+        format!("{now}.{output_ext}")
     };
     let path = match matches.free.get(0) {
         Some(p) => p,
         None => {
-            eprintln!("No output specified, defaulting to {}", ts_path);
+            eprintln!("No output specified, defaulting to {ts_path}");
             ts_path.as_str()
         }
     };
@@ -248,7 +247,7 @@ fn run() -> i32 {
                 .write_to(&mut f, output_format)
                 .expect("Writing to file failed"),
             Err(e) => {
-                eprintln!("Failed to create {}: {}", path, e);
+                eprintln!("Failed to create {path}: {e}");
                 return 1;
             }
         }

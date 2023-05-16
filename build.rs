@@ -6,7 +6,7 @@ fn main() {
         if git_version.status.success() {
             let git_version =
                 String::from_utf8(git_version.stdout).expect("Failed to decode git description");
-            print!("cargo:rustc-env=GIT_VERSION={}", git_version);
+            print!("cargo:rustc-env=GIT_VERSION={git_version}");
         }
     }
 }
