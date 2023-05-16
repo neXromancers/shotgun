@@ -10,6 +10,7 @@ in pkgs.mkShell {
     p.rust-analyzer
     p.rustc
     p.rustfmt
+    p.clippy
 
     p.xorg.libX11
     p.xorg.libXrandr

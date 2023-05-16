@@ -93,7 +93,7 @@ fn run() -> i32 {
 
     let output_ext = matches
         .opt_str("f")
-        .unwrap_or("png".to_string())
+        .unwrap_or_else(|| "png".to_string())
         .to_lowercase();
     let output_format = match output_ext.as_ref() {
         "png" => image::ImageOutputFormat::Png,
@@ -176,7 +176,7 @@ fn run() -> i32 {
         }
     };
 
-    let mut image = match image.into_image_buffer() {
+    let mut image = match image.to_image_buffer() {
         Some(i) => i,
         None => {
             eprintln!(

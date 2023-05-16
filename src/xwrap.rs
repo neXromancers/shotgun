@@ -91,8 +91,8 @@ impl Display {
             }
 
             util::Rect {
-                x: x,
-                y: y,
+                x,
+                y,
                 w: attrs.width,
                 h: attrs.height,
             }
@@ -125,7 +125,7 @@ impl Display {
                 None
             } else {
                 Some(ScreenRectIter {
-                    dpy: &self,
+                    dpy: self,
                     res: xrr_res,
                     crtcs: slice::from_raw_parts((*xrr_res).crtcs, (*xrr_res).ncrtc as usize),
                     i: 0,
@@ -176,11 +176,11 @@ impl Image {
         }
     }
 
-    pub fn into_image_buffer(&self) -> Option<RgbaImage> {
+    pub fn to_image_buffer(&self) -> Option<RgbaImage> {
         let img = unsafe { &*self.handle };
 
         if (img.red_mask, img.green_mask, img.blue_mask) == (0xF800, 0x07E0, 0x001F) {
-            return self.into_image_buffer_rgb565();
+            return self.to_image_buffer_rgb565();
         }
 
         let bytes_per_pixel = match (img.depth, img.bits_per_pixel) {
@@ -233,7 +233,7 @@ impl Image {
         ))
     }
 
-    fn into_image_buffer_rgb565(&self) -> Option<RgbaImage> {
+    fn to_image_buffer_rgb565(&self) -> Option<RgbaImage> {
         let img = unsafe { &*self.handle };
 
         if img.depth != 16 || img.bits_per_pixel != 16 {
@@ -300,8 +300,8 @@ impl<'a> Iterator for ScreenRectIter<'a> {
 
             //Some((w as i32, h as i32, x as i32, y as i32))
             Some(util::Rect {
-                x: x,
-                y: y,
+                x,
+                y,
                 w: w as i32,
                 h: h as i32,
             })
@@ -332,8 +332,8 @@ pub fn parse_geometry(g: ffi::CString) -> util::Rect {
         );
 
         util::Rect {
-            x: x,
-            y: y,
+            x,
+            y,
             w: w as i32,
             h: h as i32,
         }
