@@ -242,7 +242,7 @@ fn run() -> i32 {
             .write_all(buf.as_slice())
             .expect("Writing to stdout failed");
     } else {
-        match File::create(&Path::new(&path)) {
+        match File::create(Path::new(&path)) {
             Ok(mut f) => image
                 .write_to(&mut f, output_format)
                 .expect("Writing to file failed"),

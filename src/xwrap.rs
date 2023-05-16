@@ -289,7 +289,7 @@ impl<'a> Iterator for ScreenRectIter<'a> {
 
         unsafe {
             // TODO Handle failure here?
-            let crtc = xrandr::XRRGetCrtcInfo((*self.dpy).handle, self.res, self.crtcs[self.i]);
+            let crtc = xrandr::XRRGetCrtcInfo(self.dpy.handle, self.res, self.crtcs[self.i]);
             let x = (*crtc).x;
             let y = (*crtc).y;
             let w = (*crtc).width;
