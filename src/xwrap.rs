@@ -14,7 +14,7 @@ use x11::xlib;
 use x11::xlib_xcb;
 use x11::xrandr;
 use x11rb::connection::Connection;
-use x11rb::protocol::xproto;
+use x11rb::protocol::xproto::{self, ConnectionExt as _};
 use x11rb::xcb_ffi::XCBConnection;
 
 use crate::util;
@@ -155,27 +155,13 @@ impl Display {
     }
 
     pub fn get_cursor_position(&self) -> Option<util::Point> {
-        let mut x = 0;
-        let mut y = 0;
+        let cookie = self.conn.query_pointer(self.root()).ok()?;
+        let pointer = cookie.reply().ok()?;
 
-        unsafe {
-            if xlib::XQueryPointer(
-                self.handle,
-                self.root() as _,
-                &mut 0,
-                &mut 0,
-                &mut x,
-                &mut y,
-                &mut 0,
-                &mut 0,
-                &mut 0,
-            ) == 0
-            {
-                None
-            } else {
-                Some(util::Point { x, y })
-            }
-        }
+        Some(util::Point {
+            x: pointer.win_x as i32,
+            y: pointer.win_y as i32,
+        })
     }
 }
 
