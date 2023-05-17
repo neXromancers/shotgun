@@ -19,8 +19,8 @@ features = ["png", "pnm"]
 
 [dependencies.x11]
 version = "2.21.0"
-features = ["xlib", "xlib_xcb", "xrandr"]
+features = ["xlib", "xlib_xcb"]
 
 [dependencies.x11rb]
 version = "0.11.1"
-features = ["allow-unsafe-code"]
+features = ["allow-unsafe-code", "randr"]

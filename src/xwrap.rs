@@ -12,8 +12,8 @@ use image::Rgba;
 use image::RgbaImage;
 use x11::xlib;
 use x11::xlib_xcb;
-use x11::xrandr;
 use x11rb::connection::Connection;
+use x11rb::protocol::randr::ConnectionExt as _;
 use x11rb::protocol::xproto::{self, ConnectionExt as _};
 use x11rb::xcb_ffi::XCBConnection;
 
@@ -27,13 +27,6 @@ pub struct Display {
 
 pub struct Image {
     handle: *mut xlib::XImage,
-}
-
-pub struct ScreenRectIter<'a> {
-    dpy: &'a Display,
-    res: *mut xrandr::XRRScreenResources,
-    crtcs: &'a [xrandr::RRCrtc],
-    i: usize,
 }
 
 impl Display {
@@ -137,21 +130,31 @@ impl Display {
         }
     }
 
-    pub fn get_screen_rects(&self) -> Option<ScreenRectIter<'_>> {
-        unsafe {
-            let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, self.root() as _);
+    pub fn get_screen_rects(&self) -> Option<Vec<util::Rect>> {
+        let cookie = self
+            .conn
+            .randr_get_screen_resources_current(self.root())
+            .ok()?;
+        let res = cookie.reply().ok()?;
 
-            if xrr_res.is_null() {
-                None
-            } else {
-                Some(ScreenRectIter {
-                    dpy: self,
-                    res: xrr_res,
-                    crtcs: slice::from_raw_parts((*xrr_res).crtcs, (*xrr_res).ncrtc as usize),
-                    i: 0,
-                })
-            }
-        }
+        let rects = res
+            .crtcs
+            .iter()
+            .map(|&crtc| {
+                let cookie = self
+                    .conn
+                    .randr_get_crtc_info(crtc, res.config_timestamp)
+                    .expect("Invalid CRTC info request");
+                let info = cookie.reply().expect("Failed to get CRTC info");
+                util::Rect {
+                    x: info.x as i32,
+                    y: info.y as i32,
+                    w: info.width as i32,
+                    h: info.height as i32,
+                }
+            })
+            .collect::<Vec<_>>();
+        Some(rects)
     }
 
     pub fn get_cursor_position(&self) -> Option<util::Point> {
@@ -281,44 +284,6 @@ impl Drop for Image {
     fn drop(&mut self) {
         unsafe {
             xlib::XDestroyImage(self.handle);
-        }
-    }
-}
-
-impl<'a> Iterator for ScreenRectIter<'a> {
-    type Item = util::Rect;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.i >= self.crtcs.len() {
-            return None;
-        }
-
-        unsafe {
-            // TODO Handle failure here?
-            let crtc = xrandr::XRRGetCrtcInfo(self.dpy.handle, self.res, self.crtcs[self.i]);
-            let x = (*crtc).x;
-            let y = (*crtc).y;
-            let w = (*crtc).width;
-            let h = (*crtc).height;
-            xrandr::XRRFreeCrtcInfo(crtc);
-
-            self.i += 1;
-
-            //Some((w as i32, h as i32, x as i32, y as i32))
-            Some(util::Rect {
-                x,
-                y,
-                w: w as i32,
-                h: h as i32,
-            })
-        }
-    }
-}
-
-impl<'a> Drop for ScreenRectIter<'a> {
-    fn drop(&mut self) {
-        unsafe {
-            xrandr::XRRFreeScreenResources(self.res);
         }
     }
 }

@@ -13,7 +13,6 @@ in pkgs.mkShell {
     p.clippy
 
     p.xorg.libX11
-    p.xorg.libXrandr
     p.pkgconfig
   ];
 }

@@ -143,8 +143,8 @@ fn run() -> i32 {
         },
     };
 
-    let screen_rects: Vec<util::Rect> = match display.get_screen_rects() {
-        Some(r) => r.collect(),
+    let screen_rects = match display.get_screen_rects() {
+        Some(r) => r,
         None => {
             eprintln!("Failed to get screen rects");
             return 1;
