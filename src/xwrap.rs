@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::ffi;
-use std::mem;
 use std::os::raw;
 use std::ptr;
 use std::slice;
@@ -64,51 +63,32 @@ impl Display {
         self.screen().root
     }
 
-    pub fn get_window_rect(&self, window: xproto::Window) -> util::Rect {
-        unsafe {
-            let mut attrs = mem::MaybeUninit::uninit();
-            xlib::XGetWindowAttributes(self.handle, window as _, attrs.as_mut_ptr());
-            let attrs = attrs.assume_init();
+    pub fn get_window_geometry(&self, window: xproto::Window) -> Option<util::Rect> {
+        let geometry_cookie = self.conn.get_geometry(window).ok()?;
+        let tree_cookie = self.conn.query_tree(window).ok()?;
+        let geometry = geometry_cookie.reply().ok()?;
+        let tree = tree_cookie.reply().ok()?;
 
-            let mut root = 0;
-            let mut parent = 0;
-            let mut children: *mut xlib::Window = ptr::null_mut();
-            let mut nchildren = 0;
-            xlib::XQueryTree(
-                self.handle,
-                window as _,
-                &mut root,
-                &mut parent,
-                &mut children,
-                &mut nchildren,
-            );
-            if !children.is_null() {
-                xlib::XFree(children as *mut raw::c_void);
-            }
+        if tree.parent != 0 {
+            let cookie = self
+                .conn
+                .translate_coordinates(tree.parent, tree.root, geometry.x, geometry.y)
+                .ok()?;
+            let coords = cookie.reply().ok()?;
 
-            let mut x = attrs.x;
-            let mut y = attrs.y;
-
-            if parent != 0 {
-                let mut child = 0;
-                xlib::XTranslateCoordinates(
-                    self.handle,
-                    parent,
-                    root,
-                    attrs.x,
-                    attrs.y,
-                    &mut x,
-                    &mut y,
-                    &mut child,
-                );
-            }
-
-            util::Rect {
-                x,
-                y,
-                w: attrs.width,
-                h: attrs.height,
-            }
+            Some(util::Rect {
+                x: coords.dst_x as i32,
+                y: coords.dst_y as i32,
+                w: geometry.width as i32,
+                h: geometry.height as i32,
+            })
+        } else {
+            Some(util::Rect {
+                x: geometry.x as i32,
+                y: geometry.y as i32,
+                w: geometry.width as i32,
+                h: geometry.height as i32,
+            })
         }
     }
 

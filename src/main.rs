@@ -106,7 +106,13 @@ fn run() -> i32 {
         }
     };
 
-    let window_rect = display.get_window_rect(window);
+    let window_rect = match display.get_window_geometry(window) {
+        Some(r) => r,
+        None => {
+            eprintln!("Failed to get window geometry");
+            return 1;
+        }
+    };
 
     if matches.opt_present("s") {
         if matches.opt_present("g") {
