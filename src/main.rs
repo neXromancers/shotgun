@@ -79,7 +79,7 @@ fn run() -> i32 {
             return 1;
         }
     };
-    let root = display.get_default_root();
+    let root = display.root();
 
     let window = match matches.opt_str("i") {
         Some(s) => match util::parse_int::<xlib::Window>(&s) {
@@ -143,7 +143,7 @@ fn run() -> i32 {
         },
     };
 
-    let screen_rects: Vec<util::Rect> = match display.get_screen_rects(root) {
+    let screen_rects: Vec<util::Rect> = match display.get_screen_rects() {
         Some(r) => r.collect(),
         None => {
             eprintln!("Failed to get screen rects");
@@ -152,7 +152,7 @@ fn run() -> i32 {
     };
 
     if matches.opt_present("s") {
-        let cursor = match display.get_cursor_position(root) {
+        let cursor = match display.get_cursor_position() {
             Some(c) => c,
             None => {
                 eprintln!("Failed to get cursor position");

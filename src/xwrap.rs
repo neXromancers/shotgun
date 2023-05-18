@@ -47,7 +47,7 @@ impl Display {
         }
     }
 
-    pub fn get_default_root(&self) -> xlib::Window {
+    pub fn root(&self) -> xlib::Window {
         unsafe { xlib::XDefaultRootWindow(self.handle) }
     }
 
@@ -117,9 +117,9 @@ impl Display {
         }
     }
 
-    pub fn get_screen_rects(&self, root: xlib::Window) -> Option<ScreenRectIter<'_>> {
+    pub fn get_screen_rects(&self) -> Option<ScreenRectIter<'_>> {
         unsafe {
-            let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, root);
+            let xrr_res = xrandr::XRRGetScreenResourcesCurrent(self.handle, self.root());
 
             if xrr_res.is_null() {
                 None
@@ -134,14 +134,14 @@ impl Display {
         }
     }
 
-    pub fn get_cursor_position(&self, window: xlib::Window) -> Option<util::Point> {
+    pub fn get_cursor_position(&self) -> Option<util::Point> {
         let mut x = 0;
         let mut y = 0;
 
         unsafe {
             if xlib::XQueryPointer(
                 self.handle,
-                window,
+                self.root(),
                 &mut 0,
                 &mut 0,
                 &mut x,
