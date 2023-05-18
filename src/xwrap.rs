@@ -4,22 +4,19 @@
 
 use std::ffi;
 use std::os::raw;
-use std::ptr;
 
 use image::Rgba;
 use image::RgbaImage;
 use x11::xlib;
-use x11::xlib_xcb;
 use x11rb::connection::Connection;
 use x11rb::protocol::randr::ConnectionExt as _;
 use x11rb::protocol::xproto::{self, ConnectionExt as _};
-use x11rb::xcb_ffi::XCBConnection;
+use x11rb::rust_connection::RustConnection;
 
 use crate::util;
 
 pub struct Display {
-    handle: *mut xlib::Display,
-    conn: XCBConnection,
+    conn: RustConnection,
     screen: usize,
 }
 
@@ -33,30 +30,9 @@ pub struct Image {
 }
 
 impl Display {
-    pub fn open(name: Option<ffi::CString>) -> Option<Display> {
-        unsafe {
-            let name = match name {
-                None => ptr::null(),
-                Some(cstr) => cstr.as_ptr(),
-            };
-            let d = xlib::XOpenDisplay(name);
-
-            // TODO: change to RustConnection once the port is complete
-            let xcb_conn = xlib_xcb::XGetXCBConnection(d);
-            let conn = XCBConnection::from_raw_xcb_connection(xcb_conn, false).ok()?;
-
-            let screen = xlib::XDefaultScreen(d) as _;
-
-            if d.is_null() {
-                None
-            } else {
-                Some(Display {
-                    handle: d,
-                    conn,
-                    screen,
-                })
-            }
-        }
+    pub fn open(name: Option<&str>) -> Option<Display> {
+        let (conn, screen) = x11rb::connect(name).ok()?;
+        Some(Display { conn, screen })
     }
 
     fn screen(&self) -> &xproto::Screen {
@@ -179,14 +155,6 @@ impl Display {
             x: pointer.win_x as i32,
             y: pointer.win_y as i32,
         })
-    }
-}
-
-impl Drop for Display {
-    fn drop(&mut self) {
-        unsafe {
-            xlib::XCloseDisplay(self.handle);
-        }
     }
 }
 
