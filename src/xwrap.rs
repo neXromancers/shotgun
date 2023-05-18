@@ -235,24 +235,20 @@ impl Image {
         );
 
         // Finally, generate the image object
-        Some(RgbaImage::from_fn(
-            self.w,
-            self.h,
-            |x, y| {
-                let offset = (y * bytes_per_line + x * bytes_per_pixel) as usize;
-                Rgba([
-                    self.data[offset + red_offset],
-                    self.data[offset + green_offset],
-                    self.data[offset + blue_offset],
-                    // Make the alpha channel fully opaque if none is provided
-                    if self.format.depth == 24 {
-                        0xFF
-                    } else {
-                        self.data[offset + alpha_offset]
-                    },
-                ])
-            },
-        ))
+        Some(RgbaImage::from_fn(self.w, self.h, |x, y| {
+            let offset = (y * bytes_per_line + x * bytes_per_pixel) as usize;
+            Rgba([
+                self.data[offset + red_offset],
+                self.data[offset + green_offset],
+                self.data[offset + blue_offset],
+                // Make the alpha channel fully opaque if none is provided
+                if self.format.depth == 24 {
+                    0xFF
+                } else {
+                    self.data[offset + alpha_offset]
+                },
+            ])
+        }))
     }
 
     fn to_image_buffer_rgb565(&self) -> Option<RgbaImage> {
@@ -268,28 +264,24 @@ impl Image {
         let bytes_per_line = (self.w * bytes_per_pixel + pad - 1) / pad * pad;
 
         // Finally, generate the image object
-        Some(RgbaImage::from_fn(
-            self.w,
-            self.h,
-            |x, y| {
-                let offset = (y * bytes_per_line + x * bytes_per_pixel) as usize;
-                let pixel_slice = [self.data[offset], self.data[offset + 1]];
-                let pixel = if self.byte_order == xproto::ImageOrder::LSB_FIRST {
-                    u16::from_le_bytes(pixel_slice)
-                } else {
-                    u16::from_be_bytes(pixel_slice)
-                };
-                let red = (pixel >> 11) & 0x1F;
-                let green = (pixel >> 5) & 0x3F;
-                let blue = pixel & 0x1F;
-                Rgba([
-                    (red << 3 | red >> 2) as u8,
-                    (green << 2 | green >> 4) as u8,
-                    (blue << 3 | blue >> 2) as u8,
-                    0xFF,
-                ])
-            },
-        ))
+        Some(RgbaImage::from_fn(self.w, self.h, |x, y| {
+            let offset = (y * bytes_per_line + x * bytes_per_pixel) as usize;
+            let pixel_slice = [self.data[offset], self.data[offset + 1]];
+            let pixel = if self.byte_order == xproto::ImageOrder::LSB_FIRST {
+                u16::from_le_bytes(pixel_slice)
+            } else {
+                u16::from_be_bytes(pixel_slice)
+            };
+            let red = (pixel >> 11) & 0x1F;
+            let green = (pixel >> 5) & 0x3F;
+            let blue = pixel & 0x1F;
+            Rgba([
+                (red << 3 | red >> 2) as u8,
+                (green << 2 | green >> 4) as u8,
+                (blue << 3 | blue >> 2) as u8,
+                0xFF,
+            ])
+        }))
     }
 }
 
