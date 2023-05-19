@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::env;
-use std::ffi::CString;
 use std::fs::File;
 use std::io;
 use std::path::Path;
@@ -126,9 +125,7 @@ fn run() -> i32 {
     }
 
     let mut sel = match matches.opt_str("g") {
-        Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
-            .intersection(window_rect)
-        {
+        Some(s) => match util::parse_geometry(&s).and_then(|g| g.intersection(window_rect)) {
             Some(sel) => util::Rect {
                 // Selection is relative to the root window (whole screen)
                 x: sel.x - window_rect.x,

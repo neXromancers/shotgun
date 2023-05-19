@@ -2,12 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::ffi;
-use std::os::raw;
-
 use image::Rgba;
 use image::RgbaImage;
-use x11::xlib;
 use x11rb::connection::Connection;
 use x11rb::protocol::randr::ConnectionExt as _;
 use x11rb::protocol::xproto::{self, ConnectionExt as _};
@@ -250,28 +246,5 @@ impl Image {
                 0xFF,
             ])
         }))
-    }
-}
-
-pub fn parse_geometry(g: ffi::CString) -> util::Rect {
-    unsafe {
-        let mut x = 0;
-        let mut y = 0;
-        let mut w = 0;
-        let mut h = 0;
-        xlib::XParseGeometry(
-            g.as_ptr() as *const raw::c_char,
-            &mut x,
-            &mut y,
-            &mut w,
-            &mut h,
-        );
-
-        util::Rect {
-            x,
-            y,
-            w: w as i32,
-            h: h as i32,
-        }
     }
 }
