@@ -18,10 +18,6 @@ default-features = false
 version = "0.24.6"
 features = ["png", "pnm"]
 
-[dependencies.x11]
-version = "2.21.0"
-features = ["xlib"]
-
 [dependencies.x11rb]
 version = "0.11.1"
 features = ["randr"]

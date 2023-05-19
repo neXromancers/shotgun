@@ -149,8 +149,7 @@ Summary
 ## Installation
 
 - From source:
-  - install a recent Rust toolchain and libx11 (depending on your distribution,
-    you may need to install development headers separately)
+  - install a recent Rust toolchain
   - clone this repository and run `cargo install --path .`
   - or install from [crates.io](https://crates.io/crates/shotgun):
     `cargo install shotgun`
