@@ -49,3 +49,21 @@ pub fn parse_int<T: num_traits::Num>(string: &str) -> Result<T, T::FromStrRadixE
         _ => T::from_str_radix(string, 10),
     }
 }
+
+use image::EncodableLayout;
+pub fn write_image_buffer_with_encoder<P, Container>(
+    image: &image::ImageBuffer<P, Container>,
+    encoder: impl image::ImageEncoder,
+) -> image::ImageResult<()>
+where
+    P: image::PixelWithColorType,
+    [P::Subpixel]: image::EncodableLayout,
+    Container: core::ops::Deref<Target = [P::Subpixel]>,
+{
+    encoder.write_image(
+        image.as_raw().as_bytes(),
+        image.width(),
+        image.height(),
+        P::COLOR_TYPE,
+    )
+}
