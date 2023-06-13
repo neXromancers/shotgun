@@ -9,6 +9,7 @@ build = "build.rs"
 edition = "2018"
 
 [package.metadata.release]
+pre-release-commit-message = "Release {{version}}"
 tag-message = "Release {{version}}"
 
 [dependencies]
