@@ -1,6 +1,6 @@
 use std::cmp;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Rect {
     pub x: i32,
     pub y: i32,
@@ -67,3 +67,75 @@ where
         P::COLOR_TYPE,
     )
 }
+
+mod parse_geometry {
+    use crate::util;
+
+    use nom::bytes::complete as bytes;
+    use nom::character::complete as chr;
+    use nom::combinator as comb;
+    use nom::sequence as seq;
+
+    fn equal_sign(i: &str) -> nom::IResult<&str, char> {
+        chr::char('=')(i)
+    }
+
+    fn x_sign(i: &str) -> nom::IResult<&str, char> {
+        chr::one_of("xX")(i)
+    }
+
+    fn integer(i: &str) -> nom::IResult<&str, i32> {
+        comb::map_res(
+            // Limit to 5 digits - X11 uses i16 and u16 for position and size,
+            // and this fits comfortably into our i32 Rects.
+            bytes::take_while_m_n(1, 5, |c: char| c.is_ascii_digit()),
+            str::parse,
+        )(i)
+    }
+
+    fn sign(i: &str) -> nom::IResult<&str, i32> {
+        comb::map(chr::one_of("-+"), |s| if s == '-' { -1 } else { 1 })(i)
+    }
+
+    fn signed_integer(i: &str) -> nom::IResult<&str, i32> {
+        comb::map(seq::pair(sign, integer), |(s, m)| s * m)(i)
+    }
+
+    /// Parse a string of the form `=<width>x<height>{+-}<xoffset>{+-}<yoffset>` into a [`util::Rect`].
+    pub fn parse_geometry(g: &str) -> Option<util::Rect> {
+        let (remainder, (_, w, _, h, x, y)) = seq::tuple((
+            comb::opt(equal_sign),
+            integer,
+            x_sign,
+            integer,
+            signed_integer,
+            signed_integer,
+        ))(g)
+        .ok()?;
+
+        if !remainder.is_empty() {
+            return None;
+        }
+
+        Some(util::Rect { w, h, x, y })
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn test_parse_geometry() {
+            let res = Some(util::Rect {
+                w: 80,
+                h: 24,
+                x: 300,
+                y: -49,
+            });
+            assert_eq!(parse_geometry("=80x24+300-49"), res);
+            assert_eq!(parse_geometry("80x24+300-49"), res);
+        }
+    }
+}
+
+pub use parse_geometry::parse_geometry;

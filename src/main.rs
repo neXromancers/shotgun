@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::env;
-use std::ffi::CString;
 use std::fs::File;
 use std::io;
 use std::path::Path;
@@ -17,7 +16,7 @@ use image::GenericImageView;
 use image::ImageOutputFormat;
 use image::Rgba;
 use image::RgbaImage;
-use x11::xlib;
+use x11rb::protocol::xproto;
 
 mod util;
 mod xwrap;
@@ -79,10 +78,10 @@ fn run() -> i32 {
             return 1;
         }
     };
-    let root = display.get_default_root();
+    let root = display.root();
 
     let window = match matches.opt_str("i") {
-        Some(s) => match util::parse_int::<xlib::Window>(&s) {
+        Some(s) => match util::parse_int::<xproto::Window>(&s) {
             Ok(r) => r,
             Err(_) => {
                 eprintln!("Window ID is not a valid integer");
@@ -106,7 +105,13 @@ fn run() -> i32 {
         }
     };
 
-    let window_rect = display.get_window_rect(window);
+    let window_rect = match display.get_window_geometry(window) {
+        Some(r) => r,
+        None => {
+            eprintln!("Failed to get window geometry");
+            return 1;
+        }
+    };
 
     if matches.opt_present("s") {
         if matches.opt_present("g") {
@@ -120,9 +125,7 @@ fn run() -> i32 {
     }
 
     let mut sel = match matches.opt_str("g") {
-        Some(s) => match xwrap::parse_geometry(CString::new(s).expect("Failed to convert CString"))
-            .intersection(window_rect)
-        {
+        Some(s) => match util::parse_geometry(&s).and_then(|g| g.intersection(window_rect)) {
             Some(sel) => util::Rect {
                 // Selection is relative to the root window (whole screen)
                 x: sel.x - window_rect.x,
@@ -143,8 +146,8 @@ fn run() -> i32 {
         },
     };
 
-    let screen_rects: Vec<util::Rect> = match display.get_screen_rects(root) {
-        Some(r) => r.collect(),
+    let screen_rects = match display.get_screen_rects() {
+        Some(r) => r,
         None => {
             eprintln!("Failed to get screen rects");
             return 1;
@@ -152,7 +155,7 @@ fn run() -> i32 {
     };
 
     if matches.opt_present("s") {
-        let cursor = match display.get_cursor_position(root) {
+        let cursor = match display.get_cursor_position() {
             Some(c) => c,
             None => {
                 eprintln!("Failed to get cursor position");

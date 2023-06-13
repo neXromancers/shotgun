@@ -11,9 +11,5 @@ in pkgs.mkShell {
     p.rustc
     p.rustfmt
     p.clippy
-
-    p.xorg.libX11
-    p.xorg.libXrandr
-    p.pkgconfig
   ];
 }
