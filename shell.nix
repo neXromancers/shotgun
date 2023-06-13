@@ -11,5 +11,7 @@ in pkgs.mkShell {
     p.rustc
     p.rustfmt
     p.clippy
+
+    p.cargo-release
   ];
 }

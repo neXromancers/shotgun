@@ -8,6 +8,9 @@ repository = "https://github.com/neXromancers/shotgun"
 build = "build.rs"
 edition = "2018"
 
+[package.metadata.release]
+tag-message = "Release {{version}}"
+
 [dependencies]
 getopts = "0.2"
 num-traits = "0.2"
