@@ -98,17 +98,22 @@ mod parse_geometry {
     }
 
     fn signed_integer(i: &str) -> nom::IResult<&str, i32> {
-        comb::map(seq::pair(sign, integer), |(s, m)| s * m)(i)
+        comb::map(
+            seq::pair(comb::map(comb::opt(sign), |s| s.unwrap_or(1)), integer),
+            |(s, m)| s * m,
+        )(i)
     }
 
     /// Parse a string of the form `=<width>x<height>{+-}<xoffset>{+-}<yoffset>` into a [`util::Rect`].
     pub fn parse_geometry(g: &str) -> Option<util::Rect> {
-        let (remainder, (_, w, _, h, x, y)) = seq::tuple((
+        let (remainder, (_, w, _, h, sx, x, sy, y)) = seq::tuple((
             comb::opt(equal_sign),
             integer,
             x_sign,
             integer,
+            sign,
             signed_integer,
+            sign,
             signed_integer,
         ))(g)
         .ok()?;
@@ -117,7 +122,12 @@ mod parse_geometry {
             return None;
         }
 
-        Some(util::Rect { w, h, x, y })
+        Some(util::Rect {
+            w,
+            h,
+            x: sx * x,
+            y: sy * y,
+        })
     }
 
     #[cfg(test)]
@@ -134,6 +144,10 @@ mod parse_geometry {
             });
             assert_eq!(parse_geometry("=80x24+300-49"), res);
             assert_eq!(parse_geometry("80x24+300-49"), res);
+
+            // Double signs
+            // https://github.com/neXromancers/shotgun/issues/41
+            assert_eq!(parse_geometry("80x24++300+-49"), res);
         }
     }
 }
