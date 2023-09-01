@@ -10,6 +10,7 @@ Features:
 - *On average, shotgun is more than twice as fast as maim*
 
 ## Usage
+See the man page: `docs/shotgun.1`.
 
 ```
 Usage: shotgun [options] [file]
