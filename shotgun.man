@@ -1,0 +1,38 @@
+.TH shotgun 1 "08/31/2023" "2.5.1" "User Commands"
+.SH NAME
+shotgun \- Minimal X screenshot utility 
+.SH SYNOPSIS
+shotgun [\fIOPTIONS\fP] [\fIFILE\fP]
+.SH DESCRIPTION
+A minimal screenshot utility for X11.
+.SS SUPPORTS
+.TP
+Exporting to PNG/STDOUT
+.TP
+Masksing off-screen areas on multi-head setups
+.TP
+Selecting by window ID and geometry
+.SS OPTIONS
+.TP
+\fB-i, --id\fP ID
+Window to capture
+.TP
+\fB-g, --geometry\fP WxH+X+Y
+Area to capture
+.TP
+\fB-f, --format\fP
+Either png/pam as output format
+.TP
+\fB-s, --screen\fP
+Capture the current screen
+.TP
+\fB-h, --help\fP
+Print help and exit
+.TP
+\fB-v, --version\fP
+Print version and exit
+.SH FILE
+\fIfile\fP can be either a file name of which you would like to save the image to, or when using the "-" charicter as the file name it will pipe the image to STDOUT.
+.SH AUTHOR
+neXromancers
+
