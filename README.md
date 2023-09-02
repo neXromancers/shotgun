@@ -10,11 +10,14 @@ Features:
 - *On average, shotgun is more than twice as fast as maim*
 
 ## Usage
-See the man page: `docs/shotgun.1`.
 
 ```
 Usage: shotgun [options] [file]
 
+    file: use - as [file] for stdout
+
+Options:
+    -i, --id ID         Window to capture
 Options:
     -i, --id ID         Window to capture
     -g, --geometry WxH+X+Y
