@@ -9,6 +9,16 @@ Features:
 - Supports selections by window ID and geometry
 - *On average, shotgun is more than twice as fast as maim*
 
+## Installation
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/shotgun.svg)](https://repology.org/project/shotgun/versions)
+
+From source:
+- install a recent Rust toolchain
+- clone this repository and run `cargo install --path .`
+- or install from [crates.io](https://crates.io/crates/shotgun):
+  `cargo install shotgun`
+
 ## Usage
 
 ```
@@ -145,14 +155,3 @@ Summary
   'shotgun -f pam - | convert - jpg:- > /dev/null' ran
     1.71 ± 0.03 times faster than 'shotgun -f png - | convert - jpg:- > /dev/null'
 ```
-
-## Installation
-
-- From source:
-  - install a recent Rust toolchain
-  - clone this repository and run `cargo install --path .`
-  - or install from [crates.io](https://crates.io/crates/shotgun):
-    `cargo install shotgun`
-- [Arch Linux](https://www.archlinux.org/packages/?name=shotgun): `pacman -S shotgun`
-- [Nix/NixOS](https://github.com/NixOS/nixpkgs-channels/blob/nixos-unstable/pkgs/tools/graphics/shotgun/default.nix): `nixpkgs.shotgun`
-- Other distros: make a pull request to add your package or build script!
