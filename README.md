@@ -24,6 +24,10 @@ From source:
 ```
 Usage: shotgun [options] [file]
 
+    file: use - as [file] for stdout
+
+Options:
+    -i, --id ID         Window to capture
 Options:
     -i, --id ID         Window to capture
     -g, --geometry WxH+X+Y

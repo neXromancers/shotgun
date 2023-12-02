@@ -23,7 +23,8 @@ mod xwrap;
 use crate::xwrap::Display;
 
 fn usage(progname: &str, opts: getopts::Options) {
-    let brief = format!("Usage: {progname} [options] [file]");
+    let brief = format!("Usage: {progname} [options] [file]
+                        \n    file: use - as [file] for stdout");
     let usage = opts.usage(&brief);
     eprint!("{usage}");
 }
