@@ -20,6 +20,7 @@ From source:
   `cargo install shotgun`
 
 ## Usage
+See the man page: `docs/shotgun.1`.
 
 ```
 Usage: shotgun [options] [file]
